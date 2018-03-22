@@ -10,6 +10,8 @@ import (
 
 	"path"
 
+	"fmt"
+
 	"github.com/cloudogu/go-cas"
 	"github.com/pkg/errors"
 	"github.com/vulcand/oxy/forward"
@@ -21,6 +23,7 @@ type Configuration struct {
 	SkipSSLVerification bool
 	Port                int
 	PrincipalHeader     string
+	UserReplicator      UserReplicator
 }
 
 func NewCarpServer(configuration Configuration) (*http.Server, error) {
@@ -59,11 +62,17 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 			return
 		}
 
+		username := cas.Username(req)
 		if cas.IsFirstAuthenticatedRequest(req) {
-			// TODO replicate user
+			if configuration.UserReplicator != nil {
+				attributes := cas.Attributes(req)
+				err := configuration.UserReplicator(username, UserAttibutes(attributes))
+				if err != nil {
+					fmt.Printf("failed to replicate user: %v", err)
+				}
+			}
 		}
 
-		username := cas.Username(req)
 		req.Header.Set(configuration.PrincipalHeader, username)
 
 		req.URL = target

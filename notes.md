@@ -1,5 +1,9 @@
 # Nexus
 
+* [Script API Examples](https://help.sonatype.com/repomanager3/rest-and-integration-api/script-api/examples)
+* [Scripting](http://books.sonatype.com/nexus-book/3.0/reference/scripting.html)
+* [SecuritySystem](https://github.com/sonatype/nexus-public/blob/master/components/nexus-security/src/main/java/org/sonatype/nexus/security/SecuritySystem.java)
+
 ### Base URL
 
 POST http://localhost:9090/service/extdirect

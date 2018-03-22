@@ -7,12 +7,19 @@ import (
 func main() {
 	flag.Parse()
 
+	nur := NewNexusUserReplocator("http://localhost:8081", "admin", "admin123")
+	err := nur.CreateScript()
+	if err != nil {
+		panic(err)
+	}
+
 	configuration := Configuration{
 		CasUrl:              "https://192.168.56.2/cas",
 		Target:              "http://localhost:8081",
 		SkipSSLVerification: true,
 		Port:                9090,
 		PrincipalHeader:     "X-CARP-Authentication",
+		UserReplicator:      nur.Replicate,
 	}
 
 	server, err := NewCarpServer(configuration)
