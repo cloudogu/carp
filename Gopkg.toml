@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/cloudogu/go-cas"
-  revision = "b529ae266714c63e7be761ffd16e6bc74226b967"
+  revision = "91363f7a52d9b582b6c7f4281238c99f81789d1a"
 
 [[constraint]]
   name = "github.com/pkg/errors"
@@ -40,3 +40,7 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.2.1"

@@ -15,6 +15,7 @@ func main() {
 
 	configuration := Configuration{
 		CasUrl:              "https://192.168.56.2/cas",
+		ServiceUrl:          "http://192.168.56.1:8080",
 		Target:              "http://localhost:8081",
 		SkipSSLVerification: true,
 		Port:                9090,
