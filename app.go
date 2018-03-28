@@ -6,10 +6,14 @@ import (
     "os"
     "fmt"
     "io/ioutil"
+    "github.com/golang/glog"
 )
+
+var Version = "x.y.z-dev"
 
 func main() {
 	flag.Parse()
+	glog.Infof("start carp %s", Version)
 
     confPath := "carp.yml"
 	if _, err := os.Stat(confPath); os.IsNotExist(err) {
