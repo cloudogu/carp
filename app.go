@@ -2,26 +2,31 @@ package main
 
 import (
 	"flag"
+    "gopkg.in/yaml.v2"
+    "os"
+    "fmt"
+    "io/ioutil"
 )
 
 func main() {
 	flag.Parse()
 
-	nur := NewNexusUserReplocator("http://localhost:8081", "admin", "admin123")
-	err := nur.CreateScript()
-	if err != nil {
-		panic(err)
-	}
+    confPath := "carp.yml"
+	if _, err := os.Stat(confPath); os.IsNotExist(err) {
+        fmt.Println("could not find carp.yml")
+        os.Exit(2)
+    }
 
-	configuration := Configuration{
-		CasUrl:              "https://192.168.56.2/cas",
-		ServiceUrl:          "http://192.168.56.1:8080",
-		Target:              "http://localhost:8081",
-		SkipSSLVerification: true,
-		Port:                9090,
-		PrincipalHeader:     "X-CARP-Authentication",
-		UserReplicator:      nur.Replicate,
-	}
+    data, err := ioutil.ReadFile(confPath)
+    if err != nil {
+        panic(err)
+    }
+
+	configuration := Configuration{}
+	err = yaml.Unmarshal(data, &configuration)
+	if err != nil {
+	    panic(err)
+    }
 
 	server, err := NewCarpServer(configuration)
 	if err != nil {
