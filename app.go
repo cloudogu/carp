@@ -7,19 +7,30 @@ import (
     "fmt"
     "io/ioutil"
     "github.com/golang/glog"
+    "strings"
 )
 
 var Version = "x.y.z-dev"
 
 func main() {
 	flag.Parse()
-	glog.Infof("start carp %s", Version)
 
     confPath := "carp.yml"
+	if len(os.Args) > 1 {
+        for _, arg := range os.Args[1:] {
+            if ! strings.HasPrefix(arg, "-") {
+                confPath = arg
+                break
+            }
+        }
+    }
+
 	if _, err := os.Stat(confPath); os.IsNotExist(err) {
-        fmt.Println("could not find carp.yml")
+        fmt.Println("could not find configuration at", confPath)
         os.Exit(2)
     }
+
+    glog.Infof("start carp %s", Version)
 
     data, err := ioutil.ReadFile(confPath)
     if err != nil {
