@@ -21,12 +21,8 @@ type CasRequestHandler struct {
 
 func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler := h.CasRestHandler
-	if h.IsBrowserRequest(r) {
+	if IsBrowserRequest(r) {
 		handler = h.CasBrowserHandler
 	}
 	handler.ServeHTTP(w, r)
-}
-
-func (h *CasRequestHandler) IsBrowserRequest(r *http.Request) bool {
-	return IsBrowserRequest(r.Header.Get("User-Agent"))
 }

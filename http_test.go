@@ -18,13 +18,13 @@ const (
 	GIT_LFS = "git-lfs/2.0.1 (GitHub; windows amd64; go 1.8; git 678cdbd4)"
 )
 
-func TestIsBrowserRequest(t *testing.T) {
-	assert.True(t, IsBrowserRequest(CHROME))
-	assert.True(t, IsBrowserRequest(FIREFOX))
-	assert.True(t, IsBrowserRequest(IE))
-	assert.True(t, IsBrowserRequest(SAFARI))
-	assert.True(t, IsBrowserRequest(ANDROID))
-	assert.True(t, IsBrowserRequest(OPERA))
-	assert.True(t, IsBrowserRequest(OPERA_MINI))
-	assert.False(t, IsBrowserRequest(GIT_LFS))
+func TestIsBrowserUserAgent(t *testing.T) {
+	assert.True(t, isBrowserUserAgent(CHROME))
+	assert.True(t, isBrowserUserAgent(FIREFOX))
+	assert.True(t, isBrowserUserAgent(IE))
+	assert.True(t, isBrowserUserAgent(SAFARI))
+	assert.True(t, isBrowserUserAgent(ANDROID))
+	assert.True(t, isBrowserUserAgent(OPERA))
+	assert.True(t, isBrowserUserAgent(OPERA_MINI))
+	assert.False(t, isBrowserUserAgent(GIT_LFS))
 }
