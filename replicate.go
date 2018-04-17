@@ -1,4 +1,4 @@
-package main
+package carp
 
 type UserAttibutes map[string][]string
 

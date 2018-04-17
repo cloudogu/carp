@@ -1,4 +1,4 @@
-package main
+package carp
 
 import (
 	"net/http"
@@ -13,7 +13,7 @@ import (
 	"github.com/vulcand/oxy/forward"
 )
 
-func NewCarpServer(configuration Configuration) (*http.Server, error) {
+func NewServer(configuration Configuration) (*http.Server, error) {
 	handler, err := createRequestHandler(configuration)
 	if err != nil {
 		return nil, err

@@ -1,44 +1,40 @@
 # CARP
 
-CAS Authentication Reverse Proxy
+CARP is a "CAS Authentication Reverse Proxy" framework.
 
-## Requirements
+## Usage
 
-* [Go](https://golang.org/) >= 1.10
-* [Dep](https://golang.github.io/dep/)
+Configure your environment:
 
-## PoC with Nexus
+```yaml
+cas-url: https://192.168.56.2/cas
+service-url: http://192.168.56.1:9090
+target-url: http://localhost:8070
+skip-ssl-verification: true
+port: 9090
+principal-header: X-CARP-Authentication
+```
 
-* start Cloudogu EcoSystem
-* finish Setup and install at least cas and usermgt
-* enable development mode
-```bash
-etcdctl set /config/_global/stage development
-cesapp stop cas
-cesapp start cas
+Start the server:
+
+```go
+package main
+
+func main() {
+  flag.Parse()
+
+  configuration, err := ReadConfiguration()
+  if err != nil {
+     panic(err)
+  }
+
+  glog.Infof("start carp %s", Version)
+
+  server, err := NewServer(configuration)
+  if err != nil {
+	panic(err)
+  }
+
+  server.ListenAndServe()
+}
 ```
-* start nexus
-```bash
-docker-compose up -d
-```
-* open Nexus at http://localhost:8081
-* sign in with admin and admin123
-* enable "RUT Auth Realm" at Security->Realms
-* Add "RUT Auth" Capability with X-CARP-Authentication as Header
-* Checkout CARP
-```bash
-mkdir -p ${GOPATH}/src/github.com/cloudogu
-cd ${GOPATH}/src/github.com/cloudogu
-git clone git@github.com:cloudogu/carp.git
-cd carp
-```
-* Build CARP
-```bash
-dep ensure
-go build
-```
-* Run CARP
-```bash
-./carp
-```
-* Test Nexus with Browser and Maven at http://192.168.56.1:9090

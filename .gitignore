@@ -59,6 +59,7 @@ Temporary Items
 
 
 # End of https://www.gitignore.io/api/osx,linux,go
-target
+
+# custom
 vendor
 .idea
