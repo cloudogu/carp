@@ -4,7 +4,8 @@
 [[projects]]
   name = "github.com/cloudogu/go-cas"
   packages = ["."]
-  revision = "91363f7a52d9b582b6c7f4281238c99f81789d1a"
+  revision = "a0fd407add0fe85f8f1807adec5f9ec84e5b0a9e"
+  version = "v2.2.0"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -23,6 +24,12 @@
   packages = ["."]
   revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
   version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/patrickmn/go-cache"
+  packages = ["."]
+  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  version = "v2.1.0"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -55,13 +62,13 @@
     "forward",
     "utils"
   ]
-  revision = "9d9a6ff60150200c9ceddf08684bd4ab98cb7370"
+  revision = "6956548a7fa4272adeadf828455109c53933ea86"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "80db560fac1fb3e6ac81dbc7f8ae4c061f5257bd"
+  revision = "94e3fad7f1b4eed4ec147751ad6b4c4d33f00611"
 
 [[projects]]
   branch = "master"
@@ -70,17 +77,17 @@
     "unix",
     "windows"
   ]
-  revision = "c488ab1dd8481ef762f96a79a9577c27825be697"
+  revision = "d0faeb539838e250bd0a9db4182d48d4a1915181"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
-  version = "v2.1.1"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d80b10601d67f07eea118aa3b92325b2a1bf3cbb79efe57cdd384f4405efc52e"
+  inputs-digest = "c963419a8ddf34df92688356b1d499f6f6f8d6100912de1b3394b7ca831dc1a7"
   solver-name = "gps-cdcl"
   solver-version = 1

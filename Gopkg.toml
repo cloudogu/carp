@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/cloudogu/go-cas"
-  revision = "91363f7a52d9b582b6c7f4281238c99f81789d1a"
+  version = "v2.2.0"
 
 [[constraint]]
   name = "github.com/pkg/errors"
