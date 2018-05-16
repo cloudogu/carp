@@ -8,15 +8,21 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 		return nil, err
 	}
 
+	logoutHandler := &RedirectingHandler{
+		logoutUrl: configuration.CasUrl + "/logout",
+		delegate: casClientFactory.CreateClient().Handle(app),
+	}
+	restHandler := casClientFactory.CreateRestClient().Handle(app)
+
 	return &CasRequestHandler{
-		CasBrowserHandler: casClientFactory.CreateClient().Handle(app),
-		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app),
+		CasBrowserHandler: logoutHandler,
+		CasRestHandler:	restHandler,
 	}, nil
 }
 
 type CasRequestHandler struct {
 	CasBrowserHandler http.Handler
-	CasRestHandler    http.Handler
+	CasRestHandler	http.Handler
 }
 
 func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
