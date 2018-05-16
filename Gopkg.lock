@@ -4,8 +4,8 @@
 [[projects]]
   name = "github.com/cloudogu/go-cas"
   packages = ["."]
-  revision = "a0fd407add0fe85f8f1807adec5f9ec84e5b0a9e"
-  version = "v2.2.0"
+  revision = "5d47e3c421bfbfe95fbef4d27c4b44da92af6619"
+  version = "v2.2.1"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -88,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c963419a8ddf34df92688356b1d499f6f6f8d6100912de1b3394b7ca831dc1a7"
+  inputs-digest = "0bbe4bffb24e88fd8c1d8a9fc8ffe16e8b21c0609acf5a31a3c903c0daf3b057"
   solver-name = "gps-cdcl"
   solver-version = 1
