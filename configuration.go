@@ -15,6 +15,8 @@ type Configuration struct {
 	SkipSSLVerification bool   `yaml:"skip-ssl-verification"`
 	Port                int    `yaml:"port"`
 	PrincipalHeader     string `yaml:"principal-header"`
+	LogoutMethod        string `yaml:"logout-method"`
+	LogoutPath          string `yaml:"logout-path"`
 	UserReplicator      UserReplicator
 }
 

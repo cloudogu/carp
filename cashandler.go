@@ -8,16 +8,35 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 		return nil, err
 	}
 
-	logoutHandler := &RedirectingHandler{
-		logoutUrl: configuration.CasUrl + "/logout",
-		delegate: casClientFactory.CreateClient().Handle(app),
+	browserHandler := casClientFactory.CreateClient().Handle(app)
+
+	effectiveBrowserHandler, err := wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler)
+	if err != nil {
+		return nil, err
 	}
+
 	restHandler := casClientFactory.CreateRestClient().Handle(app)
 
 	return &CasRequestHandler{
-		CasBrowserHandler: logoutHandler,
+		CasBrowserHandler: effectiveBrowserHandler,
 		CasRestHandler:	restHandler,
 	}, nil
+}
+
+func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http.Handler) (http.Handler, error) {
+	if logoutRedirectionConfigured(configuration) {
+		logoutRedirectionHandler, err := NewLogoutRedirectionHandler(configuration, handler)
+		if err != nil {
+			return nil, err
+		}
+		return logoutRedirectionHandler, nil
+	} else {
+		return handler, nil
+	}
+}
+
+func logoutRedirectionConfigured(configuration Configuration) bool {
+	return configuration.LogoutMethod != "" || configuration.LogoutPath != ""
 }
 
 type CasRequestHandler struct {

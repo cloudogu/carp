@@ -15,6 +15,15 @@ port: 9090
 principal-header: X-CARP-Authentication
 ```
 
+If you want to redirect logout request, this can be configured with the keys `logout-method`,
+specifying a http method (`GET`, `POST`, `DELETE`, ...) and/or `logout-path` specifying the
+suffix of the logout path. Example:
+
+```yaml
+logout-method: DELETE
+logout-path: /rapture/session
+```
+
 Start the server:
 
 ```go
