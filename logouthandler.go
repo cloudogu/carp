@@ -32,8 +32,8 @@ func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *LogoutRedirectionHandler) isLogoutRequest(r *http.Request) bool {
-	logrus.Infof("Inspecting request %s url %s", r.Method, r.RequestURI)
+	logrus.Infof("Inspecting request %s url %s", r.Method, r.URL)
 	return (h.logoutMethod != "" || h.logoutPath != "") &&
 		(h.logoutMethod == "" || r.Method == h.logoutMethod) &&
-		(h.logoutPath == "" || h.logoutPath != "" && strings.HasSuffix(r.RequestURI, h.logoutPath))
+		(h.logoutPath == "" || h.logoutPath != "" && strings.HasSuffix(r.URL.Path, h.logoutPath))
 }
