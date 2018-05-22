@@ -13,12 +13,8 @@ type MockDelegate struct { }
 func (delegate MockDelegate) ServeHTTP(writer http.ResponseWriter, request *http.Request) {}
 
 func TestShouldBypassNormalRequests(t *testing.T) {
-	handler := MockDelegate{}
-
-	redirectionHandler, e := NewLogoutRedirectionHandler(Configuration{}, handler)
-	if e != nil {
-		assert.Fail(t, "got unexpected error")
-	}
+	configuration := Configuration{}
+	redirectionHandler := createSut(configuration, t)
 
 	recorder := httptest.NewRecorder()
 	redirectionHandler.ServeHTTP(
@@ -29,12 +25,8 @@ func TestShouldBypassNormalRequests(t *testing.T) {
 }
 
 func TestShouldRedirectForRequestMatchingMethod(t *testing.T) {
-	handler := MockDelegate{}
-
-	redirectionHandler, e := NewLogoutRedirectionHandler(Configuration{LogoutMethod: "DELETE", CasUrl: "/cas"}, handler)
-	if e != nil {
-		assert.Fail(t, "got unexpected error")
-	}
+	configuration := Configuration{LogoutMethod: "DELETE", CasUrl: "/cas"}
+	redirectionHandler := createSut(configuration, t)
 
 	recorder := httptest.NewRecorder()
 	redirectionHandler.ServeHTTP(
@@ -46,12 +38,8 @@ func TestShouldRedirectForRequestMatchingMethod(t *testing.T) {
 }
 
 func TestShouldRedirectForRequestMatchingPath(t *testing.T) {
-	handler := MockDelegate{}
-
-	redirectionHandler, e := NewLogoutRedirectionHandler(Configuration{LogoutPath: "/quit", CasUrl: "/cas"}, handler)
-	if e != nil {
-		assert.Fail(t, "got unexpected error")
-	}
+	configuration := Configuration{LogoutPath: "/quit", CasUrl: "/cas"}
+	redirectionHandler := createSut(configuration, t)
 
 	recorder := httptest.NewRecorder()
 	redirectionHandler.ServeHTTP(
@@ -63,12 +51,8 @@ func TestShouldRedirectForRequestMatchingPath(t *testing.T) {
 }
 
 func TestShouldRedirectForRequestMatchingPathAndMethod(t *testing.T) {
-	handler := MockDelegate{}
-
-	redirectionHandler, e := NewLogoutRedirectionHandler(Configuration{LogoutMethod: "DELETE", LogoutPath: "/quit", CasUrl: "/cas"}, handler)
-	if e != nil {
-		assert.Fail(t, "got unexpected error")
-	}
+	configuration := Configuration{LogoutMethod: "DELETE", LogoutPath: "/quit", CasUrl: "/cas"}
+	redirectionHandler := createSut(configuration, t)
 
 	recorder := httptest.NewRecorder()
 	redirectionHandler.ServeHTTP(
@@ -80,12 +64,8 @@ func TestShouldRedirectForRequestMatchingPathAndMethod(t *testing.T) {
 }
 
 func TestShouldNotRedirectForRequestNotMatchingPath(t *testing.T) {
-	handler := MockDelegate{}
-
-	redirectionHandler, e := NewLogoutRedirectionHandler(Configuration{LogoutMethod: "DELETE", LogoutPath: "/quit", CasUrl: "/cas"}, handler)
-	if e != nil {
-		assert.Fail(t, "got unexpected error")
-	}
+	configuration := Configuration{LogoutMethod: "DELETE", LogoutPath: "/quit", CasUrl: "/cas"}
+	redirectionHandler := createSut(configuration, t)
 
 	recorder := httptest.NewRecorder()
 	redirectionHandler.ServeHTTP(
@@ -96,12 +76,8 @@ func TestShouldNotRedirectForRequestNotMatchingPath(t *testing.T) {
 }
 
 func TestShouldNotRedirectForRequestNotMatchingMethod(t *testing.T) {
-	handler := MockDelegate{}
-
-	redirectionHandler, e := NewLogoutRedirectionHandler(Configuration{LogoutMethod: "DELETE", LogoutPath: "/quit", CasUrl: "/cas"}, handler)
-	if e != nil {
-		assert.Fail(t, "got unexpected error")
-	}
+	configuration := Configuration{LogoutMethod: "DELETE", LogoutPath: "/quit", CasUrl: "/cas"}
+	redirectionHandler := createSut(configuration, t)
 
 	recorder := httptest.NewRecorder()
 	redirectionHandler.ServeHTTP(
@@ -109,4 +85,13 @@ func TestShouldNotRedirectForRequestNotMatchingMethod(t *testing.T) {
 		httptest.NewRequest("POST", "/quit", strings.NewReader("")))
 
 	assert.Equal(t, 200, recorder.Code)
+}
+
+func createSut(configuration Configuration, t *testing.T) http.Handler {
+	handler := MockDelegate{}
+	redirectionHandler, e := NewLogoutRedirectionHandler(configuration, handler)
+	if e != nil {
+		assert.Fail(t, "got unexpected error")
+	}
+	return redirectionHandler
 }
