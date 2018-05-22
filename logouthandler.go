@@ -25,7 +25,7 @@ func NewLogoutRedirectionHandler(configuration Configuration, delegateHandler ht
 func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.isLogoutRequest(r) {
 		logrus.Infof("Detected logout request; redirecting to %s", h.logoutUrl)
-		http.Redirect(w, r, h.logoutUrl, 303)
+		http.Redirect(w, r, h.logoutUrl, http.StatusSeeOther)
 		return
 	}
 	h.delegate.ServeHTTP(w, r)
