@@ -1,8 +1,8 @@
 package carp
 
 import (
-	"net/http"
 	"github.com/sirupsen/logrus"
+	"net/http"
 )
 
 func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.Handler, error) {
@@ -13,30 +13,20 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 
 	browserHandler := casClientFactory.CreateClient().Handle(app)
 
-	effectiveBrowserHandler, err := wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler)
-	if err != nil {
-		return nil, err
-	}
-
-	restHandler := casClientFactory.CreateRestClient().Handle(app)
-
 	return &CasRequestHandler{
-		CasBrowserHandler: effectiveBrowserHandler,
-		CasRestHandler:    restHandler,
+		CasBrowserHandler: wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler),
+		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app),
 	}, nil
 }
 
-func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http.Handler) (http.Handler, error) {
+func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http.Handler) http.Handler {
 	if logoutRedirectionConfigured(configuration) {
 		logrus.Infoln("Found configuration for logout redirection")
-		logoutRedirectionHandler, err := NewLogoutRedirectionHandler(configuration, handler)
-		if err != nil {
-			return nil, err
-		}
-		return logoutRedirectionHandler, nil
+		logoutRedirectionHandler := NewLogoutRedirectionHandler(configuration, handler)
+		return logoutRedirectionHandler
 	} else {
 		logrus.Infoln("No configuration for logout redirection found")
-		return handler, nil
+		return handler
 	}
 }
 

@@ -1,25 +1,25 @@
 package carp
 
 import (
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
-	"github.com/sirupsen/logrus"
 )
 
 type LogoutRedirectionHandler struct {
-	logoutUrl string
-	delegate http.Handler
+	logoutUrl    string
+	delegate     http.Handler
 	logoutMethod string
-	logoutPath string
+	logoutPath   string
 }
 
-func NewLogoutRedirectionHandler(configuration Configuration, delegateHandler http.Handler) (http.Handler, error) {
+func NewLogoutRedirectionHandler(configuration Configuration, delegateHandler http.Handler) http.Handler {
 	return &LogoutRedirectionHandler{
-		logoutUrl: configuration.CasUrl + "/logout",
-		delegate: delegateHandler,
+		logoutUrl:    configuration.CasUrl + "/logout",
+		delegate:     delegateHandler,
 		logoutMethod: configuration.LogoutMethod,
-		logoutPath: configuration.LogoutPath,
-	}, nil
+		logoutPath:   configuration.LogoutPath,
+	}
 }
 
 func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
