@@ -1,14 +1,14 @@
 package carp
 
 import (
-	"testing"
-	"net/http"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"net/http/httptest"
 	"strings"
+	"testing"
 )
 
-type MockDelegate struct { }
+type MockDelegate struct{}
 
 func (delegate MockDelegate) ServeHTTP(writer http.ResponseWriter, request *http.Request) {}
 
@@ -89,9 +89,5 @@ func TestShouldNotRedirectForRequestNotMatchingMethod(t *testing.T) {
 
 func createSut(configuration Configuration, t *testing.T) http.Handler {
 	handler := MockDelegate{}
-	redirectionHandler, e := NewLogoutRedirectionHandler(configuration, handler)
-	if e != nil {
-		assert.Fail(t, "got unexpected error")
-	}
-	return redirectionHandler
+	return NewLogoutRedirectionHandler(configuration, handler)
 }
