@@ -1,7 +1,7 @@
 package carp
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 	"net/http"
 	"strings"
 )
@@ -24,7 +24,7 @@ func NewLogoutRedirectionHandler(configuration Configuration, delegateHandler ht
 
 func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.isLogoutRequest(r) {
-		logrus.Infof("Detected logout request; redirecting to %s", h.logoutUrl)
+		glog.Infof("Detected logout request; redirecting to %s", h.logoutUrl)
 		http.Redirect(w, r, h.logoutUrl, http.StatusSeeOther)
 		return
 	}
@@ -32,7 +32,7 @@ func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *LogoutRedirectionHandler) isLogoutRequest(r *http.Request) bool {
-	logrus.Infof("Inspecting request %s url %s", r.Method, r.URL)
+	glog.Infof("Inspecting request %s url %s", r.Method, r.URL)
 	return (h.logoutMethod != "" || h.logoutPath != "") &&
 		(h.logoutMethod == "" || r.Method == h.logoutMethod) &&
 		(h.logoutPath == "" || h.logoutPath != "" && strings.HasSuffix(r.URL.Path, h.logoutPath))

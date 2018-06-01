@@ -1,7 +1,7 @@
 package carp
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 	"net/http"
 )
 
@@ -21,11 +21,11 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 
 func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http.Handler) http.Handler {
 	if logoutRedirectionConfigured(configuration) {
-		logrus.Infoln("Found configuration for logout redirection")
+		glog.Infoln("Found configuration for logout redirection")
 		logoutRedirectionHandler := NewLogoutRedirectionHandler(configuration, handler)
 		return logoutRedirectionHandler
 	} else {
-		logrus.Infoln("No configuration for logout redirection found")
+		glog.Infoln("No configuration for logout redirection found")
 		return handler
 	}
 }
