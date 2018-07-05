@@ -1,6 +1,9 @@
 package carp
 
-import "net/http"
+import (
+	"github.com/golang/glog"
+	"net/http"
+)
 
 func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.Handler, error) {
 	casClientFactory, err := NewCasClientFactory(configuration)
@@ -8,10 +11,27 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 		return nil, err
 	}
 
+	browserHandler := casClientFactory.CreateClient().Handle(app)
+
 	return &CasRequestHandler{
-		CasBrowserHandler: casClientFactory.CreateClient().Handle(app),
+		CasBrowserHandler: wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler),
 		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app),
 	}, nil
+}
+
+func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http.Handler) http.Handler {
+	if logoutRedirectionConfigured(configuration) {
+		glog.Infoln("Found configuration for logout redirection")
+		logoutRedirectionHandler := NewLogoutRedirectionHandler(configuration, handler)
+		return logoutRedirectionHandler
+	} else {
+		glog.Infoln("No configuration for logout redirection found")
+		return handler
+	}
+}
+
+func logoutRedirectionConfigured(configuration Configuration) bool {
+	return configuration.LogoutMethod != "" || configuration.LogoutPath != ""
 }
 
 type CasRequestHandler struct {

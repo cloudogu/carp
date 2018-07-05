@@ -6,9 +6,8 @@ import (
 
 	"strconv"
 
-	"fmt"
-
 	"github.com/cloudogu/go-cas"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/vulcand/oxy/forward"
 )
@@ -54,7 +53,7 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 				attributes := cas.Attributes(req)
 				err := configuration.UserReplicator(username, UserAttibutes(attributes))
 				if err != nil {
-					fmt.Printf("failed to replicate user: %v", err)
+					glog.Errorf("failed to replicate user: %v", err)
 				}
 			}
 		}
