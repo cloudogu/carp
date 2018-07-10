@@ -12,13 +12,13 @@ import (
 	"github.com/vulcand/oxy/forward"
 )
 
-func NewServer(configuration Configuration) (*http.Server, error) {
+func NewServer(configuration Configuration, forwardUnauthenticatedRequests bool) (*http.Server, error) {
 	handler, err := createRequestHandler(configuration)
 	if err != nil {
 		return nil, err
 	}
 
-	casRequestHandler, err := NewCasRequestHandler(configuration, handler)
+	casRequestHandler, err := NewCasRequestHandler(configuration, handler, forwardUnauthenticatedRequests)
 	if err != nil {
 		return nil, err
 	}
