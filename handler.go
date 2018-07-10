@@ -12,13 +12,13 @@ import (
 	"github.com/vulcand/oxy/forward"
 )
 
-func NewServer(configuration Configuration, forwardUnauthenticatedRequests bool) (*http.Server, error) {
-	handler, err := createRequestHandler(configuration)
+func NewServer(configuration Configuration, forwardUnauthenticatedRESTRequests bool) (*http.Server, error) {
+	handler, err := createRequestHandler(configuration, forwardUnauthenticatedRESTRequests)
 	if err != nil {
 		return nil, err
 	}
 
-	casRequestHandler, err := NewCasRequestHandler(configuration, handler, forwardUnauthenticatedRequests)
+	casRequestHandler, err := NewCasRequestHandler(configuration, handler, forwardUnauthenticatedRESTRequests)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func NewServer(configuration Configuration, forwardUnauthenticatedRequests bool)
 	}, nil
 }
 
-func createRequestHandler(configuration Configuration) (http.HandlerFunc, error) {
+func createRequestHandler(configuration Configuration, forwardUnauthenticatedRESTRequests bool) (http.HandlerFunc, error) {
 	target, err := url.Parse(configuration.Target)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse url: %s", configuration.Target)
@@ -41,12 +41,17 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 	}
 
 	return func(w http.ResponseWriter, req *http.Request) {
-		// rest clients, should be always authenticated at this time
 		if !cas.IsAuthenticated(req) {
-			cas.RedirectToLogin(w, req)
+			if forwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
+				// forward REST req for potential local user authentication
+				req.URL = target
+				fwd.ServeHTTP(w, req)
+			} else {
+				// redirect not authenticated browser req to cas login page
+				cas.RedirectToLogin(w, req)
+			}
 			return
 		}
-
 		username := cas.Username(req)
 		if cas.IsFirstAuthenticatedRequest(req) {
 			if configuration.UserReplicator != nil {
@@ -57,9 +62,7 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 				}
 			}
 		}
-
 		req.Header.Set(configuration.PrincipalHeader, username)
-
 		req.URL = target
 		fwd.ServeHTTP(w, req)
 	}, nil
