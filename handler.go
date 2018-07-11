@@ -43,11 +43,11 @@ func createRequestHandler(configuration Configuration, forwardUnauthenticatedRES
 	return func(w http.ResponseWriter, req *http.Request) {
 		if !cas.IsAuthenticated(req) {
 			if forwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
-				// forward REST req for potential local user authentication
+				// forward REST request for potential local user authentication
 				req.URL = target
 				fwd.ServeHTTP(w, req)
 			} else {
-				// redirect not authenticated browser req to cas login page
+				// redirect not authenticated browser request to cas login page
 				cas.RedirectToLogin(w, req)
 			}
 			return
