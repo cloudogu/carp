@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func NewCasRequestHandler(configuration Configuration, app http.Handler, forwardUnauthenticatedRequests bool) (http.Handler, error) {
+func NewCasRequestHandler(configuration Configuration, app http.Handler, forwardUnauthenticatedRESTRequests bool) (http.Handler, error) {
 	casClientFactory, err := NewCasClientFactory(configuration)
 	if err != nil {
 		return nil, err
@@ -15,7 +15,7 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler, forward
 
 	return &CasRequestHandler{
 		CasBrowserHandler: wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler),
-		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app, forwardUnauthenticatedRequests),
+		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app, forwardUnauthenticatedRESTRequests),
 	}, nil
 }
 
