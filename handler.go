@@ -44,6 +44,8 @@ func createRequestHandler(configuration Configuration, forwardUnauthenticatedRES
 		if !cas.IsAuthenticated(req) {
 			if forwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
 				// forward REST request for potential local user authentication
+				// remove rut auth header to prevent unwanted access if set
+				req.Header.Del(configuration.PrincipalHeader)
 				req.URL = target
 				fwd.ServeHTTP(w, req)
 			} else {
