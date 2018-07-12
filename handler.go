@@ -12,13 +12,13 @@ import (
 	"github.com/vulcand/oxy/forward"
 )
 
-func NewServer(configuration Configuration, forwardUnauthenticatedRESTRequests bool) (*http.Server, error) {
-	handler, err := createRequestHandler(configuration, forwardUnauthenticatedRESTRequests)
+func NewServer(configuration Configuration) (*http.Server, error) {
+	handler, err := createRequestHandler(configuration)
 	if err != nil {
 		return nil, err
 	}
 
-	casRequestHandler, err := NewCasRequestHandler(configuration, handler, forwardUnauthenticatedRESTRequests)
+	casRequestHandler, err := NewCasRequestHandler(configuration, handler)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func NewServer(configuration Configuration, forwardUnauthenticatedRESTRequests b
 	}, nil
 }
 
-func createRequestHandler(configuration Configuration, forwardUnauthenticatedRESTRequests bool) (http.HandlerFunc, error) {
+func createRequestHandler(configuration Configuration) (http.HandlerFunc, error) {
 	target, err := url.Parse(configuration.Target)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse url: %s", configuration.Target)
@@ -42,7 +42,7 @@ func createRequestHandler(configuration Configuration, forwardUnauthenticatedRES
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		if !cas.IsAuthenticated(req) {
-			if forwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
+			if configuration.ForwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
 				// forward REST request for potential local user authentication
 				// remove rut auth header to prevent unwanted access if set
 				req.Header.Del(configuration.PrincipalHeader)
