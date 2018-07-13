@@ -17,7 +17,7 @@ type Configuration struct {
 	PrincipalHeader                    string `yaml:"principal-header"`
 	LogoutMethod                       string `yaml:"logout-method"`
 	LogoutPath                         string `yaml:"logout-path"`
-	ForwardUnauthenticatedRESTRequests bool   `yaml:"forwardUnauthenticatedRESTRequests"`
+	ForwardUnauthenticatedRESTRequests bool   `yaml:"forward-unauthenticated-rest-requests"`
 	UserReplicator                     UserReplicator
 }
 

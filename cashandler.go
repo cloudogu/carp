@@ -15,7 +15,7 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 
 	return &CasRequestHandler{
 		CasBrowserHandler: wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler),
-		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app, configuration.ForwardUnauthenticatedRESTRequests),
+		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app),
 	}, nil
 }
 
