@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/cloudogu/go-cas"
-  branch = "feature/forwardUnauthenticatedRequests"
+  branch = "develop"
 
 [[constraint]]
   name = "github.com/pkg/errors"
