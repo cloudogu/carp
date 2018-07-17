@@ -33,16 +33,18 @@ func NewCasClientFactory(configuration Configuration) (*CasClientFactory, error)
 	}
 
 	return &CasClientFactory{
-		serviceUrl: serviceUrl,
-		urlScheme:  urlScheme,
-		httpClient: httpClient,
+		serviceUrl:                         serviceUrl,
+		urlScheme:                          urlScheme,
+		httpClient:                         httpClient,
+		forwardUnauthenticatedRESTRequests: configuration.ForwardUnauthenticatedRESTRequests,
 	}, nil
 }
 
 type CasClientFactory struct {
-	urlScheme  cas.URLScheme
-	httpClient *http.Client
-	serviceUrl *url.URL
+	urlScheme                          cas.URLScheme
+	httpClient                         *http.Client
+	serviceUrl                         *url.URL
+	forwardUnauthenticatedRESTRequests bool
 }
 
 func (factory *CasClientFactory) CreateClient() *cas.Client {
@@ -57,5 +59,6 @@ func (factory *CasClientFactory) CreateRestClient() *cas.RestClient {
 		ServiceURL: factory.serviceUrl,
 		URLScheme:  factory.urlScheme,
 		Client:     factory.httpClient,
+		ForwardUnauthenticatedRESTRequests: factory.forwardUnauthenticatedRESTRequests,
 	})
 }

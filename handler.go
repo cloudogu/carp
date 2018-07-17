@@ -41,12 +41,19 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 	}
 
 	return func(w http.ResponseWriter, req *http.Request) {
-		// rest clients, should be always authenticated at this time
 		if !cas.IsAuthenticated(req) {
-			cas.RedirectToLogin(w, req)
+			if configuration.ForwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
+				// forward REST request for potential local user authentication
+				// remove rut auth header to prevent unwanted access if set
+				req.Header.Del(configuration.PrincipalHeader)
+				req.URL = target
+				fwd.ServeHTTP(w, req)
+			} else {
+				// redirect not authenticated browser request to cas login page
+				cas.RedirectToLogin(w, req)
+			}
 			return
 		}
-
 		username := cas.Username(req)
 		if cas.IsFirstAuthenticatedRequest(req) {
 			if configuration.UserReplicator != nil {
@@ -57,9 +64,7 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 				}
 			}
 		}
-
 		req.Header.Set(configuration.PrincipalHeader, username)
-
 		req.URL = target
 		fwd.ServeHTTP(w, req)
 	}, nil

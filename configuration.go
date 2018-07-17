@@ -9,15 +9,16 @@ import (
 )
 
 type Configuration struct {
-	CasUrl              string `yaml:"cas-url"`
-	ServiceUrl          string `yaml:"service-url"`
-	Target              string `yaml:"target-url"`
-	SkipSSLVerification bool   `yaml:"skip-ssl-verification"`
-	Port                int    `yaml:"port"`
-	PrincipalHeader     string `yaml:"principal-header"`
-	LogoutMethod        string `yaml:"logout-method"`
-	LogoutPath          string `yaml:"logout-path"`
-	UserReplicator      UserReplicator
+	CasUrl                             string `yaml:"cas-url"`
+	ServiceUrl                         string `yaml:"service-url"`
+	Target                             string `yaml:"target-url"`
+	SkipSSLVerification                bool   `yaml:"skip-ssl-verification"`
+	Port                               int    `yaml:"port"`
+	PrincipalHeader                    string `yaml:"principal-header"`
+	LogoutMethod                       string `yaml:"logout-method"`
+	LogoutPath                         string `yaml:"logout-path"`
+	ForwardUnauthenticatedRESTRequests bool   `yaml:"forward-unauthenticated-rest-requests"`
+	UserReplicator                     UserReplicator
 }
 
 func ReadConfiguration() (Configuration, error) {

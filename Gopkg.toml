@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/cloudogu/go-cas"
-  version = "v2.2.1"
+  branch = "feature/forwardUnauthenticatedRequests"
 
 [[constraint]]
   name = "github.com/pkg/errors"
