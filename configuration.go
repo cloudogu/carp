@@ -2,6 +2,7 @@ package carp
 
 import (
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 
@@ -20,6 +21,7 @@ type Configuration struct {
 	LogoutPath                         string `yaml:"logout-path"`
 	ForwardUnauthenticatedRESTRequests bool   `yaml:"forward-unauthenticated-rest-requests"`
 	UserReplicator                     UserReplicator
+	ResponseModifier                   func(*http.Response) error
 }
 
 func ReadConfiguration() (Configuration, error) {
