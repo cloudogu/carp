@@ -35,7 +35,7 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 		return nil, errors.Wrapf(err, "failed to parse url: %s", configuration.Target)
 	}
 
-	fwd, err := forward.New(forward.PassHostHeader(true))
+	fwd, err := forward.New(forward.PassHostHeader(true), forward.ResponseModifier(configuration.ResponseModifier))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create forward")
 	}

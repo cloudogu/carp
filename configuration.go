@@ -1,11 +1,13 @@
 package carp
 
 import (
-    "os"
-    "strings"
-    "io/ioutil"
-    "gopkg.in/yaml.v2"
-    "github.com/pkg/errors"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type Configuration struct {
@@ -19,34 +21,35 @@ type Configuration struct {
 	LogoutPath                         string `yaml:"logout-path"`
 	ForwardUnauthenticatedRESTRequests bool   `yaml:"forward-unauthenticated-rest-requests"`
 	UserReplicator                     UserReplicator
+	ResponseModifier                   func(*http.Response) error
 }
 
 func ReadConfiguration() (Configuration, error) {
-    configuration := Configuration{}
+	configuration := Configuration{}
 
-    confPath := "carp.yml"
-    if len(os.Args) > 1 {
-        for _, arg := range os.Args[1:] {
-            if ! strings.HasPrefix(arg, "-") {
-                confPath = arg
-                break
-            }
-        }
-    }
+	confPath := "carp.yml"
+	if len(os.Args) > 1 {
+		for _, arg := range os.Args[1:] {
+			if !strings.HasPrefix(arg, "-") {
+				confPath = arg
+				break
+			}
+		}
+	}
 
-    if _, err := os.Stat(confPath); os.IsNotExist(err) {
-        return configuration, errors.Errorf("could not find configuration at %s", confPath)
-    }
+	if _, err := os.Stat(confPath); os.IsNotExist(err) {
+		return configuration, errors.Errorf("could not find configuration at %s", confPath)
+	}
 
-    data, err := ioutil.ReadFile(confPath)
-    if err != nil {
-        return configuration, errors.Wrapf(err, "failed to read configuration %s", confPath)
-    }
+	data, err := ioutil.ReadFile(confPath)
+	if err != nil {
+		return configuration, errors.Wrapf(err, "failed to read configuration %s", confPath)
+	}
 
-    err = yaml.Unmarshal(data, &configuration)
-    if err != nil {
-        return configuration, errors.Wrapf(err, "failed to unmarshal configuration %s", confPath)
-    }
+	err = yaml.Unmarshal(data, &configuration)
+	if err != nil {
+		return configuration, errors.Wrapf(err, "failed to unmarshal configuration %s", confPath)
+	}
 
-    return configuration, nil
+	return configuration, nil
 }
