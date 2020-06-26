@@ -37,7 +37,7 @@ func main() {
      panic(err)
   }
 
-  glog.Infof("start carp %s", Version)
+  log.Infof("start carp %s", Version)
 
   server, err := NewServer(configuration)
   if err != nil {

@@ -1,6 +1,7 @@
 package carp
 
 import (
+	"github.com/op/go-logging"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -23,6 +24,8 @@ type Configuration struct {
 	UserReplicator                     UserReplicator
 	ResponseModifier                   func(*http.Response) error
 }
+
+var log = logging.MustGetLogger("carp")
 
 func ReadConfiguration() (Configuration, error) {
 	configuration := Configuration{}
