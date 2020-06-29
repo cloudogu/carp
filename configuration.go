@@ -60,6 +60,7 @@ func InitializeAndReadConfiguration() (Configuration, error) {
 	return configuration, nil
 }
 
+// Deprecated: ReadConfiguration exists for historical compatibility
 func ReadConfiguration() (Configuration, error) {
 	configuration := Configuration{}
 

@@ -32,7 +32,7 @@ package main
 func main() {
   flag.Parse()
 
-  configuration, err := ReadConfiguration()
+  configuration, err := InitializeAndReadConfiguration()
   if err != nil {
      panic(err)
   }
