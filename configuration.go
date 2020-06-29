@@ -27,7 +27,7 @@ type Configuration struct {
 	ResponseModifier                   func(*http.Response) error
 }
 
-var log = logging.MustGetLogger("nexus-carp")
+var log = logging.MustGetLogger("carp")
 
 func prepareLogger(configuration Configuration) error {
 	backend := logging.NewLogBackend(os.Stderr, "", 0)
