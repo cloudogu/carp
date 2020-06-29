@@ -29,8 +29,35 @@ type Configuration struct {
 
 var log = logging.MustGetLogger("nexus-carp")
 
-func SetLogger(logger *logging.Logger) {
-	log = logger
+func prepareLogger(configuration Configuration) error {
+	backend := logging.NewLogBackend(os.Stderr, "", 0)
+	backendLeveled := logging.AddModuleLevel(backend)
+
+	level, err := logging.LogLevel(configuration.LogLevel)
+	if err != nil {
+		return errors.Wrap(err, "could not prepare logger")
+	}
+	backendLeveled.SetLevel(level, "")
+
+	var format = logging.MustStringFormatter(configuration.LoggingFormat)
+	formatter := logging.NewBackendFormatter(backend, format)
+	logging.SetBackend(formatter)
+
+	return nil
+}
+
+func InitializeAndReadConfiguration() (Configuration, error) {
+	configuration, err := ReadConfiguration()
+	if err != nil {
+		return configuration, errors.Wrap(err, "could not initialize")
+	}
+
+	err = prepareLogger(configuration)
+	if err != nil {
+		return configuration, errors.Wrap(err, "could not initialize")
+	}
+
+	return configuration, nil
 }
 
 func ReadConfiguration() (Configuration, error) {
