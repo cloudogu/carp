@@ -21,11 +21,17 @@ type Configuration struct {
 	LogoutMethod                       string `yaml:"logout-method"`
 	LogoutPath                         string `yaml:"logout-path"`
 	ForwardUnauthenticatedRESTRequests bool   `yaml:"forward-unauthenticated-rest-requests"`
+	LoggingFormat                      string `yaml:"log-format"`
+	LogLevel                           string `yaml:"log-level"`
 	UserReplicator                     UserReplicator
 	ResponseModifier                   func(*http.Response) error
 }
 
-var log = logging.MustGetLogger("carp")
+var log = logging.MustGetLogger("nexus-carp")
+
+func SetLogger(logger *logging.Logger) {
+	log = logger
+}
 
 func ReadConfiguration() (Configuration, error) {
 	configuration := Configuration{}
