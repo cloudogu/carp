@@ -1,6 +1,7 @@
 package carp
 
 import (
+	"fmt"
 	"github.com/op/go-logging"
 	"io/ioutil"
 	"net/http"
@@ -31,17 +32,18 @@ var log = logging.MustGetLogger("carp")
 
 func prepareLogger(configuration Configuration) error {
 	backend := logging.NewLogBackend(os.Stderr, "", 0)
-	backendLeveled := logging.AddModuleLevel(backend)
+
+	var format = logging.MustStringFormatter(configuration.LoggingFormat)
+	formatter := logging.NewBackendFormatter(backend, format)
 
 	level, err := logging.LogLevel(configuration.LogLevel)
 	if err != nil {
 		return errors.Wrap(err, "could not prepare logger")
 	}
+	backendLeveled := logging.AddModuleLevel(formatter)
 	backendLeveled.SetLevel(level, "")
 
-	var format = logging.MustStringFormatter(configuration.LoggingFormat)
-	formatter := logging.NewBackendFormatter(backend, format)
-	logging.SetBackend(formatter)
+	logging.SetBackend(backendLeveled)
 
 	return nil
 }
