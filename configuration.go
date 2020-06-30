@@ -28,28 +28,8 @@ type Configuration struct {
 	ResponseModifier                   func(*http.Response) error
 }
 
-var log = logging.MustGetLogger("carp")
-
-func prepareLogger(configuration Configuration) error {
-	backend := logging.NewLogBackend(os.Stderr, "", 0)
-
-	var format = logging.MustStringFormatter(configuration.LoggingFormat)
-	formatter := logging.NewBackendFormatter(backend, format)
-
-	level, err := logging.LogLevel(configuration.LogLevel)
-	if err != nil {
-		return errors.Wrap(err, "could not prepare logger")
-	}
-	backendLeveled := logging.AddModuleLevel(formatter)
-	backendLeveled.SetLevel(level, "")
-
-	logging.SetBackend(backendLeveled)
-
-	return nil
-}
-
 func InitializeAndReadConfiguration() (Configuration, error) {
-	configuration, err := ReadConfiguration()
+	configuration, err := readConfiguration()
 	if err != nil {
 		return configuration, errors.Wrap(err, "could not initialize")
 	}
@@ -62,8 +42,7 @@ func InitializeAndReadConfiguration() (Configuration, error) {
 	return configuration, nil
 }
 
-// Deprecated: ReadConfiguration exists for historical compatibility
-func ReadConfiguration() (Configuration, error) {
+func readConfiguration() (Configuration, error) {
 	configuration := Configuration{}
 
 	confPath := "carp.yml"
@@ -91,4 +70,9 @@ func ReadConfiguration() (Configuration, error) {
 	}
 
 	return configuration, nil
+}
+
+// Deprecated: ReadConfiguration exists for historical compatibility
+func ReadConfiguration() (Configuration, error) {
+	return readConfiguration()
 }
