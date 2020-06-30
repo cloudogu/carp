@@ -1,8 +1,6 @@
 package carp
 
 import (
-	"fmt"
-	"github.com/op/go-logging"
 	"io/ioutil"
 	"net/http"
 	"os"
