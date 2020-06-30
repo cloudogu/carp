@@ -27,6 +27,10 @@ func prepareLogger(configuration Configuration) error {
 }
 
 func convertLogLevel(logLevel string) (logging.Level, error) {
-	level, err := logging.LogLevel(logLevel)
-	return level, err
+	switch logLevel {
+	case "WARN":
+		return logging.LogLevel("WARNING")
+	default:
+		return logging.LogLevel(logLevel)
+	}
 }
