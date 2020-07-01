@@ -20,11 +20,27 @@ type Configuration struct {
 	LogoutMethod                       string `yaml:"logout-method"`
 	LogoutPath                         string `yaml:"logout-path"`
 	ForwardUnauthenticatedRESTRequests bool   `yaml:"forward-unauthenticated-rest-requests"`
+	LoggingFormat                      string `yaml:"log-format"`
+	LogLevel                           string `yaml:"log-level"`
 	UserReplicator                     UserReplicator
 	ResponseModifier                   func(*http.Response) error
 }
 
-func ReadConfiguration() (Configuration, error) {
+func InitializeAndReadConfiguration() (Configuration, error) {
+	configuration, err := readConfiguration()
+	if err != nil {
+		return configuration, errors.Wrap(err, "could not initialize")
+	}
+
+	err = prepareLogger(configuration)
+	if err != nil {
+		return configuration, errors.Wrap(err, "could not initialize")
+	}
+
+	return configuration, nil
+}
+
+func readConfiguration() (Configuration, error) {
 	configuration := Configuration{}
 
 	confPath := "carp.yml"
@@ -52,4 +68,9 @@ func ReadConfiguration() (Configuration, error) {
 	}
 
 	return configuration, nil
+}
+
+// Deprecated: ReadConfiguration exists for historical compatibility
+func ReadConfiguration() (Configuration, error) {
+	return readConfiguration()
 }
