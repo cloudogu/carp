@@ -32,12 +32,12 @@ package main
 func main() {
   flag.Parse()
 
-  configuration, err := ReadConfiguration()
+  configuration, err := InitializeAndReadConfiguration()
   if err != nil {
      panic(err)
   }
 
-  glog.Infof("start carp %s", Version)
+  log.Infof("start carp %s", Version)
 
   server, err := NewServer(configuration)
   if err != nil {
