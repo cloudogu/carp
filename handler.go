@@ -3,6 +3,7 @@ package carp
 import (
 	"net/http"
 	"net/url"
+	"strings"
 
 	"strconv"
 
@@ -47,6 +48,21 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 				req.Header.Del(configuration.PrincipalHeader)
 				req.URL = target
 				fwd.ServeHTTP(w, req)
+			} else if IsBrowserRequest(req) && isRequestToResource(req) {
+				fqdn := strings.Split(configuration.ServiceUrl, "/nexus")[0]
+				response, err := http.Get(fqdn + req.URL.String())
+				if err != nil {
+					log.Errorf("failed to request resource: %v", err)
+				}
+				if response.StatusCode >= 400 {
+					// resource is unavailable
+					// redirect not authenticated browser request to cas login page
+					cas.RedirectToLogin(w, req)
+				} else {
+					log.Infof("Delivering resource %s on anonymous request...", req.URL.String())
+					req.URL = target
+					fwd.ServeHTTP(w, req)
+				}
 			} else {
 				// redirect not authenticated browser request to cas login page
 				cas.RedirectToLogin(w, req)
@@ -67,4 +83,8 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 		req.URL = target
 		fwd.ServeHTTP(w, req)
 	}, nil
+}
+
+func isRequestToResource(req *http.Request) bool {
+	return strings.Contains(req.URL.Path, "/nexus/repository/")
 }
