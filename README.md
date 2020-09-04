@@ -7,6 +7,7 @@ CARP is a "CAS Authentication Reverse Proxy" framework.
 Configure your environment:
 
 ```yaml
+base-url: https://192.168.56.2
 cas-url: https://192.168.56.2/cas
 service-url: http://192.168.56.1:9090
 target-url: http://localhost:8070
@@ -22,6 +23,13 @@ suffix of the logout path. Example:
 ```yaml
 logout-method: DELETE
 logout-path: /rapture/session
+```
+
+If you want resources to be available anonymously (=without authentication) in your application,
+you can configure the way your resource paths look like with the `resource-path` option:
+
+```yaml
+resource-path: /nexus/repository
 ```
 
 Start the server:
