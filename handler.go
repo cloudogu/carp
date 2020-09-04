@@ -42,14 +42,16 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		if !cas.IsAuthenticated(req) {
+			resourcePath := configuration.ResourcePath
+			baseUrl := configuration.BaseUrl
 			if configuration.ForwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
 				// forward REST request for potential local user authentication
 				// remove rut auth header to prevent unwanted access if set
 				req.Header.Del(configuration.PrincipalHeader)
 				req.URL = target
 				fwd.ServeHTTP(w, req)
-			} else if IsBrowserRequest(req) && isRequestToResource(req, configuration.ResourcePath) {
-				response, err := http.Get(configuration.BaseUrl + req.URL.String())
+			} else if IsBrowserRequest(req) && resourcePath != "" && baseUrl != "" && isRequestToResource(req, resourcePath) {
+				response, err := http.Get(baseUrl + req.URL.String())
 				if err != nil {
 					log.Errorf("failed to request resource: %v", err)
 				}
