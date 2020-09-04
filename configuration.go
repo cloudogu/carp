@@ -11,9 +11,11 @@ import (
 )
 
 type Configuration struct {
+	BaseUrl                            string `yaml:"base-url"`
 	CasUrl                             string `yaml:"cas-url"`
 	ServiceUrl                         string `yaml:"service-url"`
 	Target                             string `yaml:"target-url"`
+	ResourcePath                       string `yaml:"resource-path"`
 	SkipSSLVerification                bool   `yaml:"skip-ssl-verification"`
 	Port                               int    `yaml:"port"`
 	PrincipalHeader                    string `yaml:"principal-header"`
