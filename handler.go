@@ -48,9 +48,8 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 				req.Header.Del(configuration.PrincipalHeader)
 				req.URL = target
 				fwd.ServeHTTP(w, req)
-			} else if IsBrowserRequest(req) && isRequestToResource(req) {
-				fqdn := strings.Split(configuration.ServiceUrl, "/nexus")[0]
-				response, err := http.Get(fqdn + req.URL.String())
+			} else if IsBrowserRequest(req) && isRequestToResource(req, configuration.ResourcePath) {
+				response, err := http.Get(configuration.BaseUrl + req.URL.String())
 				if err != nil {
 					log.Errorf("failed to request resource: %v", err)
 				}
@@ -85,6 +84,6 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 	}, nil
 }
 
-func isRequestToResource(req *http.Request) bool {
-	return strings.Contains(req.URL.Path, "/nexus/repository/")
+func isRequestToResource(req *http.Request, resourcePath string) bool {
+	return strings.Contains(req.URL.Path, resourcePath)
 }
