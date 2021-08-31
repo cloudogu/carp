@@ -70,7 +70,10 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 			}
 			return
 		}
-		username := cas.Username(req)
+
+		username := cas.Attributes(req).Get("username")
+		log.Debugf("username = %s", username)
+
 		if cas.IsFirstAuthenticatedRequest(req) {
 			if configuration.UserReplicator != nil {
 				attributes := cas.Attributes(req)
