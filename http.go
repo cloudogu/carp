@@ -1,33 +1,50 @@
 package carp
 
 import (
-    "strings"
-    "net/http"
+	"net/http"
+	"strings"
 )
 
 func IsBrowserRequest(req *http.Request) bool {
-    return isBrowserUserAgent(req.Header.Get("User-Agent")) || isSingleLogoutRequest(req)
+	log.Debug("Entering Function 'IsBrowserRequest'")
+	b := isBrowserUserAgent(req.Header.Get("User-Agent")) || isSingleLogoutRequest(req)
+	log.Debugf("Variable: %s", b)
+	log.Debug("End of Function 'IsBrowserRequest'")
+	return b
 }
 
 func isBrowserUserAgent(userAgent string) bool {
-    lowerUserAgent := strings.ToLower(userAgent)
-    return strings.Contains(lowerUserAgent, "mozilla") || strings.Contains(lowerUserAgent, "opera")
+	log.Debug("Entering Function 'isBrowserUserAgent'")
+	lowerUserAgent := strings.ToLower(userAgent)
+	log.Debugf("Variable: %s", lowerUserAgent)
+	b := strings.Contains(lowerUserAgent, "mozilla") || strings.Contains(lowerUserAgent, "opera")
+	log.Debugf("Variable: %s", b)
+	log.Debug("End of Function 'isBrowserUserAgent'")
+	return b
 }
 
-
 func isSingleLogoutRequest(r *http.Request) bool {
-    if r.Method != "POST" {
-        return false
-    }
+	log.Debug("Entering Function 'isSingleLogoutRequest'")
+	if r.Method != "POST" {
+		log.Debugf("Condition true: 'r.Method != \"POST\"'")
+		log.Debug("End of Function 'isSingleLogoutRequest'")
+		return false
+	}
 
-    contentType := r.Header.Get("Content-Type")
-    if contentType != "application/x-www-form-urlencoded" {
-        return false
-    }
+	contentType := r.Header.Get("Content-Type")
+	log.Debugf("Variable: %s", contentType)
+	if contentType != "application/x-www-form-urlencoded" {
+		log.Debugf("Condition true: 'contentType != \"application/x-www-form-urlencoded\"'")
+		log.Debug("End of Function 'isSingleLogoutRequest'")
+		return false
+	}
 
-    if v := r.FormValue("logoutRequest"); v == "" {
-        return false
-    }
+	if v := r.FormValue("logoutRequest"); v == "" {
+		log.Debugf("Condition true: 'v := r.FormValue(\"logoutRequest\"); v == \"\"'")
+		log.Debug("End of Function 'isSingleLogoutRequest'")
+		return false
+	}
 
-    return true
+	log.Debug("End of Function 'isSingleLogoutRequest'")
+	return true
 }

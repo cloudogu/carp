@@ -29,24 +29,32 @@ type Configuration struct {
 }
 
 func InitializeAndReadConfiguration() (Configuration, error) {
+	log.Debug("Entering Method 'InitializeAndReadConfiguration'")
 	configuration, err := readConfiguration()
+	log.Debugf("Variable: %s", configuration)
 	if err != nil {
+		log.Debugf("Error: %s", err.Error())
 		return configuration, errors.Wrap(err, "could not initialize")
 	}
 
 	err = prepareLogger(configuration)
 	if err != nil {
+		log.Debugf("Error: %s", err.Error())
 		return configuration, errors.Wrap(err, "could not initialize")
 	}
 
+	log.Debugf("Variable: %s", configuration)
+	log.Debug("End of Function 'InitializeAndReadConfiguration'")
 	return configuration, nil
 }
 
 func readConfiguration() (Configuration, error) {
+	log.Debug("Entering Method 'readConfiguration'")
 	configuration := Configuration{}
 
 	confPath := "carp.yml"
 	if len(os.Args) > 1 {
+		log.Debugf("Condition true: 'len(os.Args) > 1'")
 		for _, arg := range os.Args[1:] {
 			if !strings.HasPrefix(arg, "-") {
 				confPath = arg
@@ -56,23 +64,36 @@ func readConfiguration() (Configuration, error) {
 	}
 
 	if _, err := os.Stat(confPath); os.IsNotExist(err) {
+		log.Debugf("Error: %s", err.Error())
 		return configuration, errors.Errorf("could not find configuration at %s", confPath)
 	}
 
 	data, err := ioutil.ReadFile(confPath)
+	log.Debugf("Variable: %s", data)
 	if err != nil {
+		log.Debugf("Error: %s", err.Error())
 		return configuration, errors.Wrapf(err, "failed to read configuration %s", confPath)
 	}
 
 	err = yaml.Unmarshal(data, &configuration)
 	if err != nil {
+		log.Debugf("Error: %s", err.Error())
 		return configuration, errors.Wrapf(err, "failed to unmarshal configuration %s", confPath)
 	}
 
+	log.Debugf("Variable: %s", configuration)
+	log.Debug("End of Function 'readConfiguration'")
 	return configuration, nil
 }
 
 // Deprecated: ReadConfiguration exists for historical compatibility
 func ReadConfiguration() (Configuration, error) {
-	return readConfiguration()
+	log.Debug("Entering Method 'ReadConfiguration'")
+	configuration, err := readConfiguration()
+	log.Debugf("Variable: %s", configuration)
+	if err != nil {
+		log.Debugf("Error: %s", err.Error())
+	}
+	log.Debug("End of Function 'ReadConfiguration'")
+	return configuration, err
 }

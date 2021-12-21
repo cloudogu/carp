@@ -11,27 +11,37 @@ import (
 )
 
 func NewCasClientFactory(configuration Configuration) (*CasClientFactory, error) {
+	log.Debug("Entering Method 'NewCasClientFactory'")
+	log.Debugf("Param '%s'", configuration)
+
 	casUrl, err := url.Parse(configuration.CasUrl)
 	if err != nil {
+		log.Debugf("Error: %s", err.Error())
 		return nil, errors.Wrapf(err, "failed to parse cas url: %s", configuration.CasUrl)
 	}
 
 	serviceUrl, err := url.Parse(configuration.ServiceUrl)
 	if err != nil {
+		log.Debugf("Error: %s", err.Error())
 		return nil, errors.Wrapf(err, "failed to parse service url: %s", configuration.ServiceUrl)
 	}
 
 	urlScheme := cas.NewDefaultURLScheme(casUrl)
+	log.Debugf("Variable: %s", urlScheme)
 	urlScheme.ServiceValidatePath = path.Join("p3", "serviceValidate")
+	log.Debugf("Variable: %s", urlScheme.ServiceValidatePath)
 
 	httpClient := &http.Client{}
 	if configuration.SkipSSLVerification {
+		log.Debugf("Condition true: 'configuration.SkipSSLVerification'")
 		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
+		log.Debugf("Variable: %s", transport)
 		httpClient.Transport = transport
 	}
 
+	log.Debug("End of Function 'NewCasClientFactory'")
 	return &CasClientFactory{
 		serviceUrl:                         serviceUrl,
 		urlScheme:                          urlScheme,
@@ -48,6 +58,10 @@ type CasClientFactory struct {
 }
 
 func (factory *CasClientFactory) CreateClient() *cas.Client {
+	log.Debug("Entering Method 'CreateClient'")
+	log.Debugf("Variable: %s", factory.urlScheme)
+	log.Debugf("Variable: %s", factory.httpClient)
+	log.Debug("End of Function 'CreateClient'")
 	return cas.NewClient(&cas.Options{
 		URLScheme: factory.urlScheme,
 		Client:    factory.httpClient,
@@ -55,10 +69,16 @@ func (factory *CasClientFactory) CreateClient() *cas.Client {
 }
 
 func (factory *CasClientFactory) CreateRestClient() *cas.RestClient {
+	log.Debug("Entering Method 'CreateRestClient'")
+	log.Debugf("Variable: %s", factory.serviceUrl)
+	log.Debugf("Variable: %s", factory.urlScheme)
+	log.Debugf("Variable: %s", factory.httpClient)
+	log.Debugf("Variable: %s", factory.forwardUnauthenticatedRESTRequests)
+	log.Debug("End of Function 'CreateRestClient'")
 	return cas.NewRestClient(&cas.RestOptions{
-		ServiceURL: factory.serviceUrl,
-		URLScheme:  factory.urlScheme,
-		Client:     factory.httpClient,
+		ServiceURL:                         factory.serviceUrl,
+		URLScheme:                          factory.urlScheme,
+		Client:                             factory.httpClient,
 		ForwardUnauthenticatedRESTRequests: factory.forwardUnauthenticatedRESTRequests,
 	})
 }
