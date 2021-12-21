@@ -7,6 +7,7 @@ import (
 
 func IsBrowserRequest(req *http.Request) bool {
 	log.Debug("Entering Function 'IsBrowserRequest'")
+	log.Debugf("Param '%s'", req)
 	b := isBrowserUserAgent(req.Header.Get("User-Agent")) || isSingleLogoutRequest(req)
 	log.Debugf("Variable: %s", b)
 	log.Debug("End of Function 'IsBrowserRequest'")
@@ -15,6 +16,7 @@ func IsBrowserRequest(req *http.Request) bool {
 
 func isBrowserUserAgent(userAgent string) bool {
 	log.Debug("Entering Function 'isBrowserUserAgent'")
+	log.Debugf("Param '%s'", userAgent)
 	lowerUserAgent := strings.ToLower(userAgent)
 	log.Debugf("Variable: %s", lowerUserAgent)
 	b := strings.Contains(lowerUserAgent, "mozilla") || strings.Contains(lowerUserAgent, "opera")
@@ -25,6 +27,7 @@ func isBrowserUserAgent(userAgent string) bool {
 
 func isSingleLogoutRequest(r *http.Request) bool {
 	log.Debug("Entering Function 'isSingleLogoutRequest'")
+	log.Debugf("Param '%s'", r)
 	if r.Method != "POST" {
 		log.Debugf("Condition true: 'r.Method != \"POST\"'")
 		log.Debug("End of Function 'isSingleLogoutRequest'")

@@ -14,6 +14,8 @@ type LogoutRedirectionHandler struct {
 
 func NewLogoutRedirectionHandler(configuration Configuration, delegateHandler http.Handler) http.Handler {
 	log.Debug("Entering Function 'NewLogoutRedirectionHandler'")
+	log.Debugf("Param '%s'", configuration)
+	log.Debugf("Param '%s'", delegateHandler)
 	url := configuration.CasUrl + "/logout"
 	log.Debugf("Variable: %s", url)
 	log.Debugf("Variable: %s", delegateHandler)
@@ -30,6 +32,8 @@ func NewLogoutRedirectionHandler(configuration Configuration, delegateHandler ht
 
 func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Entering Function 'ServeHTTP'")
+	log.Debugf("Param '%s'", w)
+	log.Debugf("Param '%s'", r)
 	if h.isLogoutRequest(r) {
 		log.Debugf("Condition true: 'h.isLogoutRequest(r)'")
 		log.Infof("Detected logout request; redirecting to %s", h.logoutUrl)
@@ -44,6 +48,7 @@ func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 func (h *LogoutRedirectionHandler) isLogoutRequest(r *http.Request) bool {
 	log.Debug("Entering Function 'isLogoutRequest'")
+	log.Debugf("Param '%s'", r)
 	log.Infof("Inspecting request %s url %s", r.Method, r.URL)
 	b := (h.logoutMethod != "" || h.logoutPath != "") &&
 		(h.logoutMethod == "" || r.Method == h.logoutMethod) &&

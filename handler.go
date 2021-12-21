@@ -14,6 +14,7 @@ import (
 
 func NewServer(configuration Configuration) (*http.Server, error) {
 	log.Debug("Entering Function 'NewServer'")
+	log.Debugf("Param '%s'", configuration)
 	handler, err := createRequestHandler(configuration)
 	log.Debugf("Variable: %s", handler)
 	if err != nil {
@@ -40,6 +41,7 @@ func NewServer(configuration Configuration) (*http.Server, error) {
 
 func createRequestHandler(configuration Configuration) (http.HandlerFunc, error) {
 	log.Debug("Entering Function 'createRequestHandler'")
+	log.Debugf("Param '%s'", configuration)
 	target, err := url.Parse(configuration.Target)
 	log.Debugf("Variable: %s", target)
 	if err != nil {
@@ -134,6 +136,8 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 
 func isRequestToResource(req *http.Request, resourcePath string) bool {
 	log.Debug("Entering Function 'isRequestToResource'")
+	log.Debugf("Param '%s'", req)
+	log.Debugf("Param '%s'", resourcePath)
 	log.Debug("End of Function 'isRequestToResource'")
 	return strings.Contains(req.URL.Path, resourcePath)
 }
