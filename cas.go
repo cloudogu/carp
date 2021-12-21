@@ -12,6 +12,7 @@ import (
 
 func NewCasClientFactory(configuration Configuration) (*CasClientFactory, error) {
 	log.Debug("Entering Method 'NewCasClientFactory'")
+
 	log.Debugf("Param '%s'", configuration)
 
 	casUrl, err := url.Parse(configuration.CasUrl)
@@ -41,7 +42,6 @@ func NewCasClientFactory(configuration Configuration) (*CasClientFactory, error)
 		httpClient.Transport = transport
 	}
 
-	log.Debug("End of Function 'NewCasClientFactory'")
 	return &CasClientFactory{
 		serviceUrl:                         serviceUrl,
 		urlScheme:                          urlScheme,
@@ -59,9 +59,10 @@ type CasClientFactory struct {
 
 func (factory *CasClientFactory) CreateClient() *cas.Client {
 	log.Debug("Entering Method 'CreateClient'")
+
+	log.Debug("Entering Method 'CreateClient'")
 	log.Debugf("Variable: %s", factory.urlScheme)
 	log.Debugf("Variable: %s", factory.httpClient)
-	log.Debug("End of Function 'CreateClient'")
 	return cas.NewClient(&cas.Options{
 		URLScheme: factory.urlScheme,
 		Client:    factory.httpClient,
@@ -74,7 +75,6 @@ func (factory *CasClientFactory) CreateRestClient() *cas.RestClient {
 	log.Debugf("Variable: %s", factory.urlScheme)
 	log.Debugf("Variable: %s", factory.httpClient)
 	log.Debugf("Variable: %s", factory.forwardUnauthenticatedRESTRequests)
-	log.Debug("End of Function 'CreateRestClient'")
 	return cas.NewRestClient(&cas.RestOptions{
 		ServiceURL:                         factory.serviceUrl,
 		URLScheme:                          factory.urlScheme,

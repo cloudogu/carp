@@ -13,7 +13,11 @@ import (
 )
 
 func NewServer(configuration Configuration) (*http.Server, error) {
-	log.Debug("Entering Function 'NewServer'")
+	log.Debug("Entering Method 'NewServer'")
+	defer func() {
+		log.Debug("End of Function 'NewServer'")
+	}()
+
 	log.Debugf("Param '%s'", configuration)
 	handler, err := createRequestHandler(configuration)
 	log.Debugf("Variable: %s", handler)
@@ -29,7 +33,6 @@ func NewServer(configuration Configuration) (*http.Server, error) {
 		return nil, err
 	}
 
-	log.Debug("End of Function 'NewServer'")
 	addr := ":" + strconv.Itoa(configuration.Port)
 	log.Debugf("Variable: %s", addr)
 	log.Debugf("Variable: %s", casRequestHandler)
@@ -40,7 +43,11 @@ func NewServer(configuration Configuration) (*http.Server, error) {
 }
 
 func createRequestHandler(configuration Configuration) (http.HandlerFunc, error) {
-	log.Debug("Entering Function 'createRequestHandler'")
+	log.Debug("Entering Method 'createRequestHandler'")
+	defer func() {
+		log.Debug("End of Function 'createRequestHandler'")
+	}()
+
 	log.Debugf("Param '%s'", configuration)
 	target, err := url.Parse(configuration.Target)
 	log.Debugf("Variable: %s", target)
@@ -56,9 +63,12 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 		return nil, errors.Wrap(err, "failed to create forward")
 	}
 
-	log.Debug("End of Function 'createRequestHandler'")
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Debug("Entering Function 'func(w http.ResponseWriter, req *http.Request)'")
+		log.Debug("Entering Method 'func(w http.ResponseWriter, req *http.Request)'")
+		defer func() {
+			log.Debug("End of Function 'func(w http.ResponseWriter, req *http.Request)'")
+		}()
+
 		if !cas.IsAuthenticated(req) {
 			log.Debugf("Condition true: '!cas.IsAuthenticated(req)'")
 			resourcePath := configuration.ResourcePath
@@ -76,7 +86,6 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 				req.URL = target
 				log.Debugf("Variable: %s", req.URL)
 				log.Debugf("Variable: %s", fwd)
-				log.Debug("End of Function 'func(w http.ResponseWriter, req *http.Request)'")
 				fwd.ServeHTTP(w, req)
 			} else if IsBrowserRequest(req) && resourcePath != "" && baseUrl != "" && isRequestToResource(req, resourcePath) {
 				log.Debugf("Condition true: 'IsBrowserRequest(req) && resourcePath != \"\" && baseUrl != \"\" && isRequestToResource(req, resourcePath)'")
@@ -91,21 +100,18 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 					// resource is unavailable
 					// redirect not authenticated browser request to cas login page
 					log.Debugf("REDIRECTING 2")
-					log.Debug("End of Function 'func(w http.ResponseWriter, req *http.Request)'")
 					cas.RedirectToLogin(w, req)
 				} else {
 					log.Debugf("Condition true: 'else'")
 					log.Infof("Delivering resource %s on anonymous request...", req.URL.String())
 					req.URL = target
 					log.Debugf("Variable: %s", req.URL)
-					log.Debug("End of Function 'func(w http.ResponseWriter, req *http.Request)'")
 					fwd.ServeHTTP(w, req)
 				}
 			} else {
 				log.Debugf("Condition true: 'else'")
 				// redirect not authenticated browser request to cas login page
 				log.Debugf("REDIRECTING 1")
-				log.Debug("End of Function 'func(w http.ResponseWriter, req *http.Request)'")
 				cas.RedirectToLogin(w, req)
 			}
 			return
@@ -129,15 +135,17 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 		log.Debugf("Variable: %s", req.Header)
 		req.URL = target
 		log.Debugf("Variable: %s", req.URL)
-		log.Debug("End of Function 'func(w http.ResponseWriter, req *http.Request)'")
 		fwd.ServeHTTP(w, req)
 	}, nil
 }
 
 func isRequestToResource(req *http.Request, resourcePath string) bool {
-	log.Debug("Entering Function 'isRequestToResource'")
+	log.Debug("Entering Method 'isRequestToResource'")
+	defer func() {
+		log.Debug("End of Function 'isRequestToResource'")
+	}()
+
 	log.Debugf("Param '%s'", req)
 	log.Debugf("Param '%s'", resourcePath)
-	log.Debug("End of Function 'isRequestToResource'")
 	return strings.Contains(req.URL.Path, resourcePath)
 }

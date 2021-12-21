@@ -6,6 +6,10 @@ import (
 
 func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.Handler, error) {
 	log.Debug("Entering Method 'NewCasRequestHandler'")
+	defer func() {
+		log.Debug("End of Function 'NewCasRequestHandler'")
+	}()
+
 	log.Debugf("Param '%s'", configuration)
 	log.Debugf("Param '%s'", app)
 	casClientFactory, err := NewCasClientFactory(configuration)
@@ -22,7 +26,6 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 	log.Debugf("Variable: %s", needed)
 	handle := casClientFactory.CreateRestClient().Handle(app)
 	log.Debugf("Variable: %s", handle)
-	log.Debug("End of Function 'NewCasRequestHandler'")
 	return &CasRequestHandler{
 		CasBrowserHandler: needed,
 		CasRestHandler:    handle,
@@ -31,6 +34,10 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 
 func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http.Handler) http.Handler {
 	log.Debug("Entering Method 'wrapWithLogoutRedirectionIfNeeded'")
+	defer func() {
+		log.Debug("End of Function 'wrapWithLogoutRedirectionIfNeeded'")
+	}()
+
 	log.Debugf("Param '%s'", configuration)
 	log.Debugf("Param '%s'", handler)
 	if logoutRedirectionConfigured(configuration) {
@@ -38,21 +45,22 @@ func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http
 		log.Info("Found configuration for logout redirection")
 		logoutRedirectionHandler := NewLogoutRedirectionHandler(configuration, handler)
 		log.Debugf("Variable: %s", logoutRedirectionHandler)
-		log.Debug("End of Function 'wrapWithLogoutRedirectionIfNeeded'")
 		return logoutRedirectionHandler
 	} else {
 		log.Info("No configuration for logout redirection found")
 		log.Debugf("Variable: %s", handler)
-		log.Debug("End of Function 'wrapWithLogoutRedirectionIfNeeded'")
 		return handler
 	}
 }
 
 func logoutRedirectionConfigured(configuration Configuration) bool {
 	log.Debug("Entering Method 'logoutRedirectionConfigured'")
+	defer func() {
+		log.Debug("End of Function 'logoutRedirectionConfigured'")
+	}()
+
 	log.Debugf("Param '%s'", configuration)
 	log.Debugf("Variable: %s", configuration.LogoutMethod != "" || configuration.LogoutPath != "")
-	log.Debug("End of Function 'logoutRedirectionConfigured'")
 	return configuration.LogoutMethod != "" || configuration.LogoutPath != ""
 }
 
@@ -63,6 +71,10 @@ type CasRequestHandler struct {
 
 func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Entering Method 'ServeHTTP'")
+	defer func() {
+		log.Debug("End of Function 'ServeHTTP'")
+	}()
+
 	log.Debugf("Param '%s'", w)
 	log.Debugf("Param '%s'", r)
 	handler := h.CasRestHandler
@@ -71,6 +83,5 @@ func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("Condition true: 'IsBrowserRequest(r)'")
 		handler = h.CasBrowserHandler
 	}
-	log.Debug("End of Function 'ServeHTTP'")
 	handler.ServeHTTP(w, r)
 }

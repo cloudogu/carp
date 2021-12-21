@@ -30,6 +30,10 @@ type Configuration struct {
 
 func InitializeAndReadConfiguration() (Configuration, error) {
 	log.Debug("Entering Method 'InitializeAndReadConfiguration'")
+	defer func() {
+		log.Debug("End of Function 'InitializeAndReadConfiguration'")
+	}()
+
 	configuration, err := readConfiguration()
 	log.Debugf("Variable: %s", configuration)
 	if err != nil {
@@ -44,12 +48,15 @@ func InitializeAndReadConfiguration() (Configuration, error) {
 	}
 
 	log.Debugf("Variable: %s", configuration)
-	log.Debug("End of Function 'InitializeAndReadConfiguration'")
 	return configuration, nil
 }
 
 func readConfiguration() (Configuration, error) {
 	log.Debug("Entering Method 'readConfiguration'")
+	defer func() {
+		log.Debug("End of Function 'readConfiguration'")
+	}()
+
 	configuration := Configuration{}
 
 	confPath := "carp.yml"
@@ -82,18 +89,20 @@ func readConfiguration() (Configuration, error) {
 	}
 
 	log.Debugf("Variable: %s", configuration)
-	log.Debug("End of Function 'readConfiguration'")
 	return configuration, nil
 }
 
 // Deprecated: ReadConfiguration exists for historical compatibility
 func ReadConfiguration() (Configuration, error) {
 	log.Debug("Entering Method 'ReadConfiguration'")
+	defer func() {
+		log.Debug("End of Function 'ReadConfiguration'")
+	}()
+
 	configuration, err := readConfiguration()
 	log.Debugf("Variable: %s", configuration)
 	if err != nil {
 		log.Debugf("Error: %s", err.Error())
 	}
-	log.Debug("End of Function 'ReadConfiguration'")
 	return configuration, err
 }
