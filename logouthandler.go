@@ -22,6 +22,10 @@ func NewLogoutRedirectionHandler(configuration Configuration, delegateHandler ht
 }
 
 func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	for _, value := range r.TLS.PeerCertificates {
+		log.Info(string(value.Raw))
+	}
+
 	if h.isLogoutRequest(r) {
 		log.Infof("Detected logout request; redirecting to %s", h.logoutUrl)
 		http.Redirect(w, r, h.logoutUrl, http.StatusSeeOther)
