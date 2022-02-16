@@ -22,7 +22,7 @@ func NewLogoutRedirectionHandler(configuration Configuration, delegateHandler ht
 }
 
 func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if &r.TLS.PeerCertificates[0] == nil {
+	if &r.TLS.PeerCertificates[0] != nil {
 		for _, value := range r.TLS.PeerCertificates {
 			log.Info(string(value.Raw))
 		}
