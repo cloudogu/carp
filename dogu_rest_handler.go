@@ -47,7 +47,7 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 			statusCode:     http.StatusOK,
 		}
 
-		if IsBrowserRequest(request) {
+		if IsBrowserRequest(request) || !configuration.ForwardUnauthenticatedRESTRequests {
 			casHandler.ServeHTTP(writer, request)
 			return
 		}
