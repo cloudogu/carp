@@ -12,6 +12,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/vulcand/oxy v1.1.1-0.20200728142051-1826c8c7524c
 	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
+	golang.org/x/time v0.5.0
 	gopkg.in/cas.v1 v1.2.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect

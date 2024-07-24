@@ -23,9 +23,14 @@ func NewServer(configuration Configuration) (*http.Server, error) {
 		return nil, err
 	}
 
+	doguRestHandler, err := NewDoguRestHandler(configuration, casRequestHandler)
+	if err != nil {
+		return nil, err
+	}
+
 	return &http.Server{
 		Addr:    ":" + strconv.Itoa(configuration.Port),
-		Handler: casRequestHandler,
+		Handler: doguRestHandler,
 	}, nil
 }
 
