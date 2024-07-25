@@ -36,6 +36,8 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 	}
 
 	forwardReqToDogu := func(writer http.ResponseWriter, request *http.Request) {
+		username, _, _ := request.BasicAuth()
+		log.Infof("forwarding request of user %s to dogu: %s", username, request.RequestURI)
 		request.Header.Del(configuration.PrincipalHeader)
 		request.URL = target
 		fwd.ServeHTTP(writer, request)
@@ -52,7 +54,10 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 			return
 		}
 
+		username, _, _ := request.BasicAuth()
+
 		ip := request.Header.Get("X-Forwarded-For")
+		log.Infof("%s: found REST user %s and IP address %s", request.RequestURI, username, ip)
 		if ip == "" {
 			log.Warning("X-Forwarded-For header is not set, let CAS handle request...")
 			casHandler.ServeHTTP(writer, request)
@@ -62,13 +67,17 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 
 		limiter := getLimiter(ip)
 
+		log.Infof("%s: user %s and IP address %s has %f0.3 tokens left", request.RequestURI, username, ip, limiter.Tokens())
+
 		if !limiter.Allow() {
+			log.Infof("%s: to many requests of user %s and IP address %s", request.RequestURI, username, ip)
 			http.Error(writer, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
 		}
 
 		forwardReqToDogu(statusWriter, request)
 
+		log.Infof("%s: request of %s was responded with status code %d", request.RequestURI, username, statusWriter.statusCode)
 		if statusWriter.statusCode < 200 || statusWriter.statusCode >= 300 {
 			casHandler.ServeHTTP(writer, request)
 			return
