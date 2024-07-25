@@ -57,6 +57,11 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 		username, _, _ := request.BasicAuth()
 
 		ip := request.Header.Get("X-Forwarded-For")
+
+		for _, header := range request.Header {
+			log.Infof("Header: %s:", header)
+		}
+
 		log.Infof("%s: found REST user %s and IP address %s", request.RequestURI, username, ip)
 		if ip == "" {
 			log.Warning("X-Forwarded-For header is not set, let CAS handle request...")
@@ -67,7 +72,7 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 
 		limiter := getLimiter(ip)
 
-		log.Infof("%s: user %s and IP address %s has %f0.3 tokens left", request.RequestURI, username, ip, limiter.Tokens())
+		log.Infof("%s: user %s and IP address %s has %.2f tokens left", request.RequestURI, username, ip, limiter.Tokens())
 
 		if !limiter.Allow() {
 			log.Infof("%s: to many requests of user %s and IP address %s", request.RequestURI, username, ip)
