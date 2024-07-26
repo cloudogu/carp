@@ -1,13 +1,23 @@
 package carp
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/vulcand/oxy/forward"
 	"golang.org/x/time/rate"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 )
+
+const (
+	// TODO make token number customizable
+	limiterDefaultTokensRate        = 50
+	limiterDefaultTokensDuringBurst = 150
+)
+
+const httpHeaderXForwardedFor = "X-Forwarded-For"
 
 var (
 	mu      sync.RWMutex
@@ -56,26 +66,37 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 
 		username, _, _ := request.BasicAuth()
 
-		ip := request.Header.Get("X-Forwarded-For")
-
-		for _, header := range request.Header {
-			log.Infof("Header: %s:", header)
+		headers := strings.Builder{}
+		for key, value := range request.Header {
+			headers.WriteString(" ")
+			headers.WriteString(key)
+			headers.WriteString(": ")
+			headers.WriteString(strings.Join(value, ", "))
 		}
+		log.Infof("Headers:%s:", headers.String())
 
-		log.Infof("%s: found REST user %s and IP address %s", request.RequestURI, username, ip)
-		if ip == "" {
+		// go reverse proxy may add additional IP addresses from localhost. We need to take the right one.
+		forwardedIpAddrRaw := request.Header.Get(httpHeaderXForwardedFor)
+		forwardedIpAddresses := strings.Split(forwardedIpAddrRaw, ", ")
+		initialForwardedIpAddress := ""
+		if len(forwardedIpAddresses) > 0 {
+			initialForwardedIpAddress = forwardedIpAddresses[0]
+		}
+		log.Infof("%s: found REST user %s and IP address %s", request.RequestURI, username, initialForwardedIpAddress)
+
+		if initialForwardedIpAddress == "" {
 			log.Warning("X-Forwarded-For header is not set, let CAS handle request...")
 			casHandler.ServeHTTP(writer, request)
 
 			return
 		}
 
-		limiter := getLimiter(ip)
+		limiter := getLimiter(initialForwardedIpAddress)
 
-		log.Infof("%s: user %s and IP address %s has %.2f tokens left", request.RequestURI, username, ip, limiter.Tokens())
+		log.Infof("%s: user %s and IP address %s has %.1f tokens left", request.RequestURI, username, initialForwardedIpAddress, limiter.Tokens())
 
 		if !limiter.Allow() {
-			log.Infof("%s: to many requests of user %s and IP address %s", request.RequestURI, username, ip)
+			log.Infof("%s: to many requests of user %s and IP address %s", request.RequestURI, username, initialForwardedIpAddress)
 			http.Error(writer, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
 		}
@@ -88,7 +109,7 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 			return
 		}
 
-		cleanClient(ip)
+		cleanClient(initialForwardedIpAddress, username)
 
 	}, nil
 }
@@ -99,14 +120,21 @@ func getLimiter(ip string) *rate.Limiter {
 
 	l, ok := clients[ip]
 	if !ok {
-		l = rate.NewLimiter(50, 150)
+		l = rate.NewLimiter(limiterDefaultTokensRate, limiterDefaultTokensDuringBurst)
 		clients[ip] = l
 	}
 
 	return l
 }
 
-func cleanClient(ip string) {
+func tokenFloatToString(token float64) string {
+	return fmt.Sprintf("%.1f", token)
+}
+
+func cleanClient(ip string, username string) {
+	tokens := getLimiter(ip).Tokens()
+	tokensStr := tokenFloatToString(tokens)
+	log.Infof("carp throttle: releasing throttle for user %s and IP address %s with previously %s tokens left", username, ip, tokensStr)
 	mu.Lock()
 	defer mu.Unlock()
 
