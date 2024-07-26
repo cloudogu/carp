@@ -38,7 +38,7 @@ func TestNewDoguRestHandler(t *testing.T) {
 		nexusHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() { _ = r.Body.Close() }()
 			// then
-			expectedURI := fmt.Sprintf("%s%d", someTargetFile, requestCallCount)
+			expectedURI := fmt.Sprintf("%s/%d", someTargetFile, requestCallCount)
 			nexusCallCount++
 
 			assert.Equal(t, http.MethodGet, r.Method)
@@ -63,23 +63,25 @@ func TestNewDoguRestHandler(t *testing.T) {
 		requestUrl := prepareServers(t, nexusHandler, casHandler, carpCasHandler)
 
 		// when
-		for i := 0; i < requestCount; i++ {
-			req := &http.Request{
-				Method: http.MethodGet,
-				URL:    requestUrl.JoinPath(strconv.Itoa(i)),
-				Header: map[string][]string{
-					httpHeaderXForwardedFor: {someExternalClientIp},
-					httpHeaderAuthorization: {"Basic " + httpValueBasicAuthNexusLocalUser},
-				},
-			}
+		for requestCallCount = 0; requestCallCount < requestCount; requestCallCount++ {
+			t.Run("req#"+strconv.Itoa(requestCallCount), func(t *testing.T) {
+				req := &http.Request{
+					Method: http.MethodGet,
+					URL:    requestUrl.JoinPath(strconv.Itoa(requestCallCount)),
+					Header: map[string][]string{
+						httpHeaderXForwardedFor: {someExternalClientIp},
+						httpHeaderAuthorization: {"Basic " + httpValueBasicAuthNexusLocalUser},
+					},
+				}
 
-			resp, err := (&http.Client{}).Do(req)
+				resp, err := (&http.Client{}).Do(req)
 
-			// then cont'd
-			require.NoError(t, err)
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, tokenFloatToString(150.0), tokenFloatToString(getLimiter(someExternalClientIp).Tokens()))
-			assert.Equal(t, i, nexusCallCount, "unexpected target request count; did some requests went AWOL?")
+				// then cont'd
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusOK, resp.StatusCode)
+				assert.InDelta(t, 150.0, getLimiter(someExternalClientIp).Tokens(), 0.5)
+				assert.Equal(t, requestCallCount, nexusCallCount-1, "unexpected target request count; did some requests went AWOL?")
+			})
 		}
 	})
 	t.Run("attack with unknown user and throttle by 3 tokens, fail target handler, fail casHandler", func(t *testing.T) {
@@ -142,7 +144,7 @@ func TestNewDoguRestHandler(t *testing.T) {
 		nexusHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() { _ = r.Body.Close() }()
 			// then
-			expectedURI := fmt.Sprintf("%s%d", someTargetFile, nexusCallCount)
+			expectedURI := fmt.Sprintf("%s/%d", someTargetFile, nexusCallCount)
 			nexusCallCount++
 
 			assert.Equal(t, http.MethodGet, r.Method)
@@ -168,22 +170,24 @@ func TestNewDoguRestHandler(t *testing.T) {
 		requestUrl := prepareServers(t, nexusHandler, casHandler, carpCasHandler)
 
 		// when
-		for i := 0; i < requestCount; i++ {
-			req := &http.Request{
-				Method: http.MethodGet,
-				URL:    requestUrl.JoinPath(strconv.Itoa(i)),
-				Header: map[string][]string{
-					httpHeaderXForwardedFor: {someExternalClientIp},
-					httpHeaderAuthorization: {"Basic " + httpValueBasicAuthNexusLocalUser},
-				},
-			}
+		for requestCallCount := 0; requestCallCount < requestCount; requestCallCount++ {
+			t.Run("req#"+strconv.Itoa(requestCallCount), func(t *testing.T) {
+				req := &http.Request{
+					Method: http.MethodGet,
+					URL:    requestUrl.JoinPath(strconv.Itoa(requestCallCount)),
+					Header: map[string][]string{
+						httpHeaderXForwardedFor: {someExternalClientIp},
+						httpHeaderAuthorization: {"Basic " + httpValueBasicAuthNexusLocalUser},
+					},
+				}
 
-			resp, err := (&http.Client{}).Do(req)
+				resp, err := (&http.Client{}).Do(req)
 
-			// then cont'd
-			require.NoError(t, err)
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, tokenFloatToString(150.0), tokenFloatToString(getLimiter(someExternalClientIp).Tokens()))
+				// then cont'd
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusOK, resp.StatusCode)
+				assert.InDelta(t, 150.0, getLimiter(someExternalClientIp).Tokens(), 0.5)
+			})
 		}
 	})
 }

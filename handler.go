@@ -12,6 +12,7 @@ import (
 	"github.com/vulcand/oxy/forward"
 )
 
+// NewServer creates a new carp server. Start the server with ListenAndServe()
 func NewServer(configuration Configuration) (*http.Server, error) {
 	handler, err := createRequestHandler(configuration)
 	if err != nil {
