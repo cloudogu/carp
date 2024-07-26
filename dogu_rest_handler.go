@@ -1,7 +1,6 @@
 package carp
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/vulcand/oxy/forward"
 	"golang.org/x/time/rate"
@@ -93,10 +92,10 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 
 		limiter := getLimiter(initialForwardedIpAddress)
 
-		log.Infof("%s: user %s and IP address %s has %.1f tokens left", request.RequestURI, username, initialForwardedIpAddress, limiter.Tokens())
+		log.Infof("user %s and IP address %s has %.1f tokens left", username, initialForwardedIpAddress, limiter.Tokens())
 
 		if !limiter.Allow() {
-			log.Infof("%s: to many requests of user %s and IP address %s", request.RequestURI, username, initialForwardedIpAddress)
+			log.Infof("too many requests of user %s and IP address %s", username, initialForwardedIpAddress)
 			http.Error(writer, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
 		}
@@ -105,7 +104,9 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 
 		log.Infof("%s: request of %s was responded with status code %d", request.RequestURI, username, statusWriter.statusCode)
 		if statusWriter.statusCode < 200 || statusWriter.statusCode >= 300 {
+			logCurrentToken(initialForwardedIpAddress, username, limiter.Tokens())
 			casHandler.ServeHTTP(writer, request)
+			// TODO this introduces a memory leak because some IPs never receive cleanClient() calls
 			return
 		}
 
@@ -127,14 +128,13 @@ func getLimiter(ip string) *rate.Limiter {
 	return l
 }
 
-func tokenFloatToString(token float64) string {
-	return fmt.Sprintf("%.1f", token)
+func logCurrentToken(ip, username string, token float64) {
+	log.Infof("carp throttle: user %s and IP address %s with previously %.1f tokens left", username, ip, token)
 }
 
-func cleanClient(ip string, username string) {
-	tokens := getLimiter(ip).Tokens()
-	tokensStr := tokenFloatToString(tokens)
-	log.Infof("carp throttle: releasing throttle for user %s and IP address %s with previously %s tokens left", username, ip, tokensStr)
+func cleanClient(ip, username string) {
+	logCurrentToken(ip, username, getLimiter(ip).Tokens())
+
 	mu.Lock()
 	defer mu.Unlock()
 
