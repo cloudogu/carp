@@ -14,14 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// HTTP header keys
-const (
-	httpHeaderAuthorization = "Authorization"
-)
-
 // HTTP header values
 const (
 	httpValueBasicAuthNexusLocalUser = "bG9jYWxVc2VybmFtZTpwYXNzd29yZA=="
+	httpValueBasicAuthBruteForceUser = "YXR0YWNrZXI6aDR4eDByNQ=="
 )
 
 const (
@@ -94,7 +90,7 @@ func TestNewDoguRestHandler(t *testing.T) {
 			nexusCallCount++
 
 			assert.Equal(t, http.MethodGet, r.Method)
-			assert.Equal(t, "Basic "+"h4xx0r5", r.Header.Get(httpHeaderAuthorization))
+			assert.Equal(t, "Basic "+httpValueBasicAuthBruteForceUser, r.Header.Get(httpHeaderAuthorization))
 			assert.Equal(t, someExternalClientIp+", 127.0.0.1", r.Header.Get(httpHeaderXForwardedFor))
 			assert.Equal(t, expectedURI, r.RequestURI)
 			w.WriteHeader(http.StatusUnauthorized)
@@ -123,7 +119,7 @@ func TestNewDoguRestHandler(t *testing.T) {
 				req, _ := http.NewRequest(http.MethodGet, reqUrl, nil)
 				req.Header = map[string][]string{
 					httpHeaderXForwardedFor: {someExternalClientIp},
-					httpHeaderAuthorization: {"Basic " + "h4xx0r5"},
+					httpHeaderAuthorization: {"Basic " + httpValueBasicAuthBruteForceUser},
 				}
 
 				httpCli := &http.Client{}
@@ -132,7 +128,7 @@ func TestNewDoguRestHandler(t *testing.T) {
 				// then cont'd
 				require.NoError(t, err)
 				assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-				assert.InDelta(t, 147.9, getLimiter(someExternalClientIp).Tokens(), 0.9)
+				assert.InDelta(t, 150-requestCallCount-1, getLimiter(someExternalClientIp).Tokens(), 0.9)
 				assert.Equal(t, requestCallCount, nexusCallCount-1, "unexpected target request count; did some requests went AWOL?")
 				assert.Equal(t, requestCallCount, casCallCount-1, "unexpected cas request count; did some requests went AWOL?")
 

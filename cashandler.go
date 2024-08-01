@@ -40,7 +40,11 @@ type CasRequestHandler struct {
 
 func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler := h.CasRestHandler
+	username, _, _ := r.BasicAuth()
+	log.Infof("Serving request %s for user %s...", r.URL.String(), username)
+
 	if IsBrowserRequest(r) {
+		log.Infof("Switching to CasBrowserHandler for request %s for user %s...", r.URL.String(), username)
 		handler = h.CasBrowserHandler
 	}
 	handler.ServeHTTP(w, r)

@@ -1,6 +1,7 @@
 package carp
 
 import (
+	"encoding/base64"
 	"github.com/pkg/errors"
 	"github.com/vulcand/oxy/forward"
 	"golang.org/x/time/rate"
@@ -17,6 +18,7 @@ const (
 )
 
 const httpHeaderXForwardedFor = "X-Forwarded-For"
+const httpHeaderAuthorization = "Authorization"
 
 var (
 	mu      sync.RWMutex
@@ -46,19 +48,21 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 
 	forwardReqToDogu := func(writer http.ResponseWriter, request *http.Request) {
 		username, _, _ := request.BasicAuth()
-		log.Infof("forwarding request of user %s to dogu: %s", username, request.RequestURI)
+		log.Infof("forwardToDoguHandler: forwarding request of user %s to dogu: %s", username, request.URL.String())
 		request.Header.Del(configuration.PrincipalHeader)
 		request.URL = target
 		fwd.ServeHTTP(writer, request)
 	}
 
 	return func(writer http.ResponseWriter, request *http.Request) {
+		log.Infof("doguRestHandler: receiving request: %s", request.URL.String())
 		statusWriter := &statusResponseWriter{
 			ResponseWriter: writer,
 			statusCode:     http.StatusOK,
 		}
 
 		if IsBrowserRequest(request) || !configuration.ForwardUnauthenticatedRESTRequests {
+			log.Infof("doguRestHandler: browser request identified: serving request with CAS handler: %s", request.URL.String())
 			casHandler.ServeHTTP(writer, request)
 			return
 		}
@@ -70,9 +74,20 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 			headers.WriteString(" ")
 			headers.WriteString(key)
 			headers.WriteString(": ")
-			headers.WriteString(strings.Join(value, ", "))
+			if key == httpHeaderAuthorization {
+				splitUser, redactedPassword, ok := getUsernameFromAuthorizationHeader(value)
+				if !ok {
+					headers.WriteString("...")
+					log.Debug("Splitting the basic auth user was unsuccessful... continuing")
+					continue
+				}
+				headers.WriteString(splitUser)
+				headers.WriteString(redactedPassword)
+			} else {
+				headers.WriteString(strings.Join(value, ", "))
+			}
 		}
-		log.Infof("Headers:%s:", headers.String())
+		log.Debugf("Headers:%s:", headers.String())
 
 		// go reverse proxy may add additional IP addresses from localhost. We need to take the right one.
 		forwardedIpAddrRaw := request.Header.Get(httpHeaderXForwardedFor)
@@ -84,7 +99,7 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 		log.Infof("%s: found REST user %s and IP address %s", request.RequestURI, username, initialForwardedIpAddress)
 
 		if initialForwardedIpAddress == "" {
-			log.Warning("X-Forwarded-For header is not set, let CAS handle request...")
+			log.Infof("doguRestHandler: X-Forwarded-For header is not set: serving request with CAS handler: %s", request.URL.String())
 			casHandler.ServeHTTP(writer, request)
 
 			return
@@ -102,9 +117,10 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 
 		forwardReqToDogu(statusWriter, request)
 
-		log.Infof("%s: request of %s was responded with status code %d", request.RequestURI, username, statusWriter.statusCode)
+		log.Infof("%s: request of %s responded with status code %d", request.RequestURI, username, statusWriter.statusCode)
 		if statusWriter.statusCode < 200 || statusWriter.statusCode >= 300 {
 			logCurrentToken(initialForwardedIpAddress, username, limiter.Tokens())
+			log.Infof("doguRestHandler: statusWriter found HTTP %d: serving request with CAS handler: %s", statusWriter.statusCode, request.URL.String())
 			casHandler.ServeHTTP(writer, request)
 			// TODO this introduces a memory leak because some IPs never receive cleanClient() calls
 			return
@@ -113,6 +129,20 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 		cleanClient(initialForwardedIpAddress, username)
 
 	}, nil
+}
+
+func getUsernameFromAuthorizationHeader(value []string) (string, string, bool) {
+	_, splitCreds, ok := strings.Cut(value[0], " ")
+	if !ok {
+		return "", "", false
+	}
+	decodedCreds, _ := base64.URLEncoding.DecodeString(splitCreds)
+	splitUser, _, ok := strings.Cut(string(decodedCreds), ":")
+	if !ok {
+		return "", "", false
+	}
+	redactedPassword := ":***"
+	return splitUser, redactedPassword, true
 }
 
 func getLimiter(ip string) *rate.Limiter {
