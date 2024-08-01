@@ -58,10 +58,13 @@ func createRequestHandler(configuration Configuration) (http.HandlerFunc, error)
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		if !cas.IsAuthenticated(req) {
-			log.Infof("Found CAS-unauthenticated request %s...", req.URL.String())
+			log.Infof("Found CAS-UNauthenticated request %s...", req.URL.String())
 			resourcePath := configuration.ResourcePath
 			baseUrl := configuration.BaseUrl
 			if configuration.ForwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
+				//TODO no longer forward request to nexus here
+				panic("no longer forward request to nexus here")
+
 				// forward REST request for potential local user authentication
 				// remove rut auth header to prevent unwanted access if set
 				req.Header.Del(configuration.PrincipalHeader)

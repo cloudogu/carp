@@ -14,7 +14,6 @@ func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.H
 
 	return &CasRequestHandler{
 		CasBrowserHandler: wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler),
-		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app),
 	}, nil
 }
 
@@ -35,17 +34,9 @@ func logoutRedirectionConfigured(configuration Configuration) bool {
 
 type CasRequestHandler struct {
 	CasBrowserHandler http.Handler
-	CasRestHandler    http.Handler
 }
 
 func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	handler := h.CasRestHandler
-	username, _, _ := r.BasicAuth()
-	log.Infof("Serving request %s for user %s...", r.URL.String(), username)
-
-	if IsBrowserRequest(r) {
-		log.Infof("Switching to CasBrowserHandler for request %s for user %s...", r.URL.String(), username)
-		handler = h.CasBrowserHandler
-	}
-	handler.ServeHTTP(w, r)
+	log.Infof("casHandler: Serving request %s...", r.URL.String())
+	h.CasBrowserHandler.ServeHTTP(w, r)
 }
