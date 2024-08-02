@@ -1,7 +1,6 @@
 package carp
 
 import (
-	"encoding/base64"
 	"github.com/pkg/errors"
 	"github.com/vulcand/oxy/forward"
 	"golang.org/x/time/rate"
@@ -27,12 +26,25 @@ var (
 
 type statusResponseWriter struct {
 	http.ResponseWriter
+
 	statusCode int
+	// wroteHeader returns true if any write method from ResponseWriter was called previously.
+	wroteHeader bool
 }
 
 func (s *statusResponseWriter) WriteHeader(statusCode int) {
 	s.ResponseWriter.WriteHeader(statusCode)
 	s.statusCode = statusCode
+	s.wroteHeader = true
+}
+func (w *statusResponseWriter) Write(b []byte) (int, error) {
+	// comply with the default behaviour of net.ResponseWriter to default to HTTP 200 on the first write call without
+	// previously setting a header
+	if w.statusCode == 0 {
+		w.statusCode = http.StatusOK
+	}
+	w.wroteHeader = true
+	return w.ResponseWriter.Write(b)
 }
 
 func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (http.HandlerFunc, error) {
@@ -62,7 +74,7 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 		}
 
 		if IsBrowserRequest(request) || !configuration.ForwardUnauthenticatedRESTRequests {
-			log.Infof("doguRestHandler: browser request identified: serving request with CAS handler: %s", request.URL.String())
+			log.Infof("doguRestHandler: browser request %s identified: cannot handle this", request.URL.String())
 			casHandler.ServeHTTP(writer, request)
 			return
 		}
@@ -75,13 +87,14 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 			headers.WriteString(key)
 			headers.WriteString(": ")
 			if key == httpHeaderAuthorization {
-				splitUser, redactedPassword, ok := getUsernameFromAuthorizationHeader(value)
+				splitUser, redactedPassword, ok := getRedactedCredentialsFromAuthHeader(value)
 				if !ok {
 					headers.WriteString("...")
 					log.Debug("Splitting the basic auth user was unsuccessful... continuing")
 					continue
 				}
 				headers.WriteString(splitUser)
+				headers.WriteString(":")
 				headers.WriteString(redactedPassword)
 			} else {
 				headers.WriteString(strings.Join(value, ", "))
@@ -131,18 +144,17 @@ func NewDoguRestHandler(configuration Configuration, casHandler http.Handler) (h
 	}, nil
 }
 
-func getUsernameFromAuthorizationHeader(value []string) (string, string, bool) {
-	_, splitCreds, ok := strings.Cut(value[0], " ")
-	if !ok {
+func getRedactedCredentialsFromAuthHeader(value []string) (string, string, bool) {
+	if !strings.HasPrefix("Basic ", value[0]) {
 		return "", "", false
 	}
-	decodedCreds, _ := base64.URLEncoding.DecodeString(splitCreds)
-	splitUser, _, ok := strings.Cut(string(decodedCreds), ":")
-	if !ok {
-		return "", "", false
-	}
-	redactedPassword := ":***"
-	return splitUser, redactedPassword, true
+
+	// creating a request is kind of a hack but is more reliable than decoding basic auth creds manually
+	req := http.Request{Header: map[string][]string{httpHeaderAuthorization: value}}
+	user, _, ok := req.BasicAuth()
+
+	redactedPassword := "***"
+	return user, redactedPassword, ok
 }
 
 func getLimiter(ip string) *rate.Limiter {

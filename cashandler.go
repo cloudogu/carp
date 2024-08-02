@@ -4,17 +4,25 @@ import (
 	"net/http"
 )
 
-func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.Handler, error) {
+func NewCasRequestHandler(configuration Configuration) (http.Handler, error) {
 	casClientFactory, err := NewCasClientFactory(configuration)
 	if err != nil {
 		return nil, err
 	}
 
-	browserHandler := casClientFactory.CreateClient().Handle(app)
+	casHandler := createCasHandlerFunc(configuration)
+
+	browserHandler := casClientFactory.CreateClient().Handle(casHandler)
 
 	return &CasRequestHandler{
 		CasBrowserHandler: wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler),
 	}, nil
+}
+
+func createCasHandlerFunc(configuration Configuration) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO implement with stuff from the general handler
+	})
 }
 
 func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http.Handler) http.Handler {

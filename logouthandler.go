@@ -27,6 +27,7 @@ func (h *LogoutRedirectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		http.Redirect(w, r, h.logoutUrl, http.StatusSeeOther)
 		return
 	}
+
 	h.delegate.ServeHTTP(w, r)
 }
 
