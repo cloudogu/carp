@@ -57,7 +57,7 @@ func TestCreateHandlersForConfig(t *testing.T) {
 				// then cont'd
 				require.NoError(t, err)
 				assert.Equal(t, http.StatusOK, resp.StatusCode)
-				assert.InDelta(t, 150.0, getLimiter(someExternalClientIp).Tokens(), 0.5)
+				assert.InDelta(t, 150.0, getOrCreateLimiter(someExternalClientIp).Tokens(), 0.5)
 				assert.Equal(t, requestCallCount, nexusCallCount-1, "unexpected target request count; did some requests went AWOL?")
 			})
 		}
@@ -104,7 +104,7 @@ func TestCreateHandlersForConfig(t *testing.T) {
 				// then cont'd
 				require.NoError(t, err)
 				assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-				assert.InDelta(t, 150-requestCallCount-1, getLimiter(someExternalClientIp).Tokens(), 0.5)
+				assert.InDelta(t, 150-requestCallCount-1, getOrCreateLimiter(someExternalClientIp).Tokens(), 0.5)
 				assert.Equal(t, requestCallCount, nexusCallCount-1, "unexpected target request count; did some requests went AWOL?")
 				assert.Equal(t, requestCallCount, casCallCount-1, "unexpected cas request count; did some requests went AWOL?")
 			})

@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-func NewCasRequestHandler(configuration Configuration) (http.Handler, error) {
+func NewCasRequestHandler(configuration Configuration, factory handlerFactory) (http.Handler, error) {
 	casClientFactory, err := NewCasClientFactory(configuration)
 	if err != nil {
 		return nil, err
