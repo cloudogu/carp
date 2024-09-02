@@ -37,7 +37,7 @@ func createHandlersForConfig(configuration Configuration) (http.HandlerFunc, err
 		return nil, err
 	}
 
-	throttlingHandler, err := NewThrottlingHandler(configuration, casRequestHandler)
+	throttlingHandler := NewThrottlingHandler(configuration, casRequestHandler)
 	if err != nil {
 		return nil, err
 	}

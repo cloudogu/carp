@@ -26,6 +26,8 @@ type Configuration struct {
 	LogLevel                           string `yaml:"log-level"`
 	UserReplicator                     UserReplicator
 	ResponseModifier                   func(*http.Response) error
+	LimiterTokenRate                   int `yaml:"limiter-token-rate"`
+	LimiterBurstSize                   int `yaml:"limiter-burst-size"`
 }
 
 func InitializeAndReadConfiguration() (Configuration, error) {
