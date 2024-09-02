@@ -4,25 +4,20 @@ import (
 	"net/http"
 )
 
-func NewCasRequestHandler(configuration Configuration, factory handlerFactory) (http.Handler, error) {
+// NewCasRequestHandler creates a CasRequestHandler that wraps the given http.Handler and adds CAS-Authentication to the request
+func NewCasRequestHandler(configuration Configuration, handler http.Handler) (http.Handler, error) {
 	casClientFactory, err := NewCasClientFactory(configuration)
 	if err != nil {
 		return nil, err
 	}
 
-	casHandler := createCasHandlerFunc(configuration)
-
-	browserHandler := casClientFactory.CreateClient().Handle(casHandler)
+	browserHandler := casClientFactory.CreateClient().Handle(handler)
 
 	return &CasRequestHandler{
+		wrappedHandler:    handler,
 		CasBrowserHandler: wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler),
+		CasRestHandler:    casClientFactory.CreateRestClient().Handle(handler),
 	}, nil
-}
-
-func createCasHandlerFunc(configuration Configuration) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO implement with stuff from the general handler
-	})
 }
 
 func wrapWithLogoutRedirectionIfNeeded(configuration Configuration, handler http.Handler) http.Handler {
@@ -41,10 +36,21 @@ func logoutRedirectionConfigured(configuration Configuration) bool {
 }
 
 type CasRequestHandler struct {
+	wrappedHandler    http.Handler
 	CasBrowserHandler http.Handler
+	CasRestHandler    http.Handler
 }
 
 func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Infof("casHandler: Serving request %s...", r.URL.String())
-	h.CasBrowserHandler.ServeHTTP(w, r)
+	if ShouldByPassCasAuthentication(r) {
+		// no cas-authentication needed -> skip cas-handler
+		h.wrappedHandler.ServeHTTP(w, r)
+		return
+	}
+
+	handler := h.CasRestHandler
+	if IsBrowserRequest(r) {
+		handler = h.CasBrowserHandler
+	}
+	handler.ServeHTTP(w, r)
 }
