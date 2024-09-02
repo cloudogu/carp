@@ -1,245 +1,192 @@
 package carp
 
 import (
+	"bytes"
+	"context"
+	"encoding/base64"
 	"fmt"
-	"net"
+	"github.com/op/go-logging"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// HTTP header values
-const (
-	httpValueBasicAuthNexusLocalUser = "bG9jYWxVc2VybmFtZTpwYXNzd29yZA=="
-	httpValueBasicAuthBruteForceUser = "YXR0YWNrZXI6aDR4eDByNQ=="
-)
-
-const (
-	someExternalClientIp = "10.20.30.40"
-	someTargetFile       = "/nexus/repository/supersecret/file"
-)
-
 func TestNewDoguRestHandler(t *testing.T) {
-	const requestCount = 3
-
-	t.Run("should successfully GET 3x a target file first with target-internal user, but never call casHandler", func(t *testing.T) {
-		requestCallCount := 0
-		nexusCallCount := 0
-		nexusHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer func() { _ = r.Body.Close() }()
-			// then
-			expectedURI := fmt.Sprintf("%s/%d", someTargetFile, requestCallCount)
-			nexusCallCount++
-
-			assert.Equal(t, http.MethodGet, r.Method)
-			assert.Equal(t, "Basic "+httpValueBasicAuthNexusLocalUser, r.Header.Get(httpHeaderAuthorization))
-			assert.Equal(t, someExternalClientIp+", 127.0.0.1", r.Header.Get(_HttpHeaderXForwardedFor))
-			assert.Equal(t, expectedURI, r.RequestURI)
-			w.WriteHeader(http.StatusOK)
+	t.Run("should set context value in request if username matches", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			isServiceAccount, ok := r.Context().Value(_ServiceAccountAuthContextKey).(bool)
+			require.True(t, ok)
+			assert.True(t, isServiceAccount)
 		})
 
-		casHandler := http.HandlerFunc(func(respWriter http.ResponseWriter, r *http.Request) {
-			defer func() { _ = r.Body.Close() }()
-			respWriter.WriteHeader(http.StatusTeapot)
-			t.Errorf("did not expect request against CAS: %#v", r)
-		})
+		req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("service_account_BASELINE_aBcDeF:myPassword"))))
+		w := httptest.NewRecorder()
 
-		carpCasHandler := http.HandlerFunc(func(respWriter http.ResponseWriter, r *http.Request) {
-			defer func() { _ = r.Body.Close() }()
-			respWriter.WriteHeader(http.StatusTeapot)
-			t.Errorf("did not expect req against CAS handler: %#v", r)
-		})
-
-		requestUrl := prepareServers(t, nexusHandler, casHandler, carpCasHandler)
-
-		// when
-		for requestCallCount = 0; requestCallCount < requestCount; requestCallCount++ {
-			t.Run("req#"+strconv.Itoa(requestCallCount), func(t *testing.T) {
-				req := &http.Request{
-					Method: http.MethodGet,
-					URL:    requestUrl.JoinPath(strconv.Itoa(requestCallCount)),
-					Header: map[string][]string{
-						_HttpHeaderXForwardedFor: {someExternalClientIp},
-						httpHeaderAuthorization:  {"Basic " + httpValueBasicAuthNexusLocalUser},
-					},
-				}
-
-				resp, err := (&http.Client{}).Do(req)
-
-				// then cont'd
-				require.NoError(t, err)
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
-				assert.InDelta(t, 150.0, getOrCreateLimiter(someExternalClientIp).Tokens(), 0.5)
-				assert.Equal(t, requestCallCount, nexusCallCount-1, "unexpected target request count; did some requests went AWOL?")
-			})
+		config := Configuration{
+			ServiceAccountNameRegex:            "^service_account_([A-Za-z0-9]+)_([A-Za-z0-9]+)$",
+			ForwardUnauthenticatedRESTRequests: true,
 		}
+		doguRestHandler, err := NewDoguRestHandler(config, nextHandler)
+		require.NoError(t, err)
+
+		doguRestHandler.ServeHTTP(w, req)
 	})
-	t.Run("attack with unknown user and throttle by 3 tokens, fail target handler, fail casHandler", func(t *testing.T) {
-		requestCallCount := 0
-		nexusCallCount := 0
-		nexusHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer func() { _ = r.Body.Close() }()
-			// then
-			expectedURI := fmt.Sprintf("%s/%d", someTargetFile, requestCallCount)
-			nexusCallCount++
 
-			assert.Equal(t, http.MethodGet, r.Method)
-			assert.Equal(t, "Basic "+httpValueBasicAuthBruteForceUser, r.Header.Get(httpHeaderAuthorization))
-			assert.Equal(t, someExternalClientIp+", 127.0.0.1", r.Header.Get(_HttpHeaderXForwardedFor))
-			assert.Equal(t, expectedURI, r.RequestURI)
-			w.WriteHeader(http.StatusUnauthorized)
+	t.Run("should not set context value in request if username does not match", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, ok := r.Context().Value(_ServiceAccountAuthContextKey).(bool)
+			assert.False(t, ok)
 		})
 
-		casCallCount := 0
-		casHandler := http.HandlerFunc(func(respWriter http.ResponseWriter, r *http.Request) {
-			casCallCount++
-			defer func() { _ = r.Body.Close() }()
-			respWriter.WriteHeader(http.StatusUnauthorized)
-		})
+		req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("myUser:myPassword"))))
+		w := httptest.NewRecorder()
 
-		mockCarpCasHandler := http.HandlerFunc(func(respWriter http.ResponseWriter, r *http.Request) {
-			defer func() { _ = r.Body.Close() }()
-			respWriter.WriteHeader(http.StatusTeapot)
-			t.Errorf("did not expect req against CAS handler: %#v", r)
-		})
-
-		requestUrl := prepareServers(t, nexusHandler, casHandler, mockCarpCasHandler)
-
-		// when
-		for requestCallCount = 0; requestCallCount < requestCount; requestCallCount++ {
-			t.Run("req#"+strconv.Itoa(requestCallCount), func(t *testing.T) {
-
-				reqUrl := requestUrl.JoinPath(strconv.Itoa(requestCallCount)).String()
-				req, _ := http.NewRequest(http.MethodGet, reqUrl, nil)
-				req.Header = map[string][]string{
-					_HttpHeaderXForwardedFor: {someExternalClientIp},
-					httpHeaderAuthorization:  {"Basic " + httpValueBasicAuthBruteForceUser},
-				}
-
-				httpCli := &http.Client{}
-				resp, err := httpCli.Do(req)
-
-				// then cont'd
-				require.NoError(t, err)
-				assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-				assert.InDelta(t, 150-requestCallCount-1, getOrCreateLimiter(someExternalClientIp).Tokens(), 0.9)
-				assert.Equal(t, requestCallCount, nexusCallCount-1, "unexpected target request count; did some requests went AWOL?")
-				assert.Equal(t, requestCallCount, casCallCount-1, "unexpected cas request count; did some requests went AWOL?")
-
-			})
+		config := Configuration{
+			ServiceAccountNameRegex:            "^service_account_([A-Za-z0-9]+)_([A-Za-z0-9]+)$",
+			ForwardUnauthenticatedRESTRequests: true,
 		}
+		doguRestHandler, err := NewDoguRestHandler(config, nextHandler)
+		require.NoError(t, err)
+
+		doguRestHandler.ServeHTTP(w, req)
 	})
-	t.Run("should successfully GET 3x a target file first with target-internal user, but never call casHandler", func(t *testing.T) {
-		nexusCallCount := 0
-		nexusHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer func() { _ = r.Body.Close() }()
-			// then
-			expectedURI := fmt.Sprintf("%s/%d", someTargetFile, nexusCallCount)
-			nexusCallCount++
 
-			assert.Equal(t, http.MethodGet, r.Method)
-			assert.Equal(t, "Basic "+httpValueBasicAuthNexusLocalUser, r.Header.Get(httpHeaderAuthorization))
-			assert.Equal(t, someExternalClientIp+", 127.0.0.1", r.Header.Get(_HttpHeaderXForwardedFor))
-			assert.Equal(t, expectedURI, r.RequestURI)
-			w.WriteHeader(http.StatusOK)
-
+	t.Run("should not set context value in request if request is browser-request", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, ok := r.Context().Value(_ServiceAccountAuthContextKey).(bool)
+			assert.False(t, ok)
 		})
 
-		casHandler := http.HandlerFunc(func(respWriter http.ResponseWriter, r *http.Request) {
-			defer func() { _ = r.Body.Close() }()
-			respWriter.WriteHeader(http.StatusTeapot)
-			t.Errorf("did not expect request against CAS: %#v", r)
-		})
+		req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("service_account_BASELINE_aBcDeF:myPassword"))))
+		req.Header.Set("User-Agent", "mozilla")
+		w := httptest.NewRecorder()
 
-		carpCasHandler := http.HandlerFunc(func(respWriter http.ResponseWriter, r *http.Request) {
-			defer func() { _ = r.Body.Close() }()
-			respWriter.WriteHeader(http.StatusTeapot)
-			t.Errorf("did not expect req against CAS handler: %#v", r)
-		})
-
-		requestUrl := prepareServers(t, nexusHandler, casHandler, carpCasHandler)
-
-		// when
-		for requestCallCount := 0; requestCallCount < requestCount; requestCallCount++ {
-			t.Run("req#"+strconv.Itoa(requestCallCount), func(t *testing.T) {
-				req := &http.Request{
-					Method: http.MethodGet,
-					URL:    requestUrl.JoinPath(strconv.Itoa(requestCallCount)),
-					Header: map[string][]string{
-						_HttpHeaderXForwardedFor: {someExternalClientIp},
-						httpHeaderAuthorization:  {"Basic " + httpValueBasicAuthNexusLocalUser},
-					},
-				}
-
-				resp, err := (&http.Client{}).Do(req)
-
-				// then cont'd
-				require.NoError(t, err)
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
-				assert.InDelta(t, 150.0, getOrCreateLimiter(someExternalClientIp).Tokens(), 0.5)
-			})
+		config := Configuration{
+			ServiceAccountNameRegex:            "^service_account_([A-Za-z0-9]+)_([A-Za-z0-9]+)$",
+			ForwardUnauthenticatedRESTRequests: true,
 		}
+		doguRestHandler, err := NewDoguRestHandler(config, nextHandler)
+		require.NoError(t, err)
+
+		doguRestHandler.ServeHTTP(w, req)
+	})
+
+	t.Run("should not set context value in request if request is not forwarding unauthenticated rest-request", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, ok := r.Context().Value(_ServiceAccountAuthContextKey).(bool)
+			assert.False(t, ok)
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("service_account_BASELINE_aBcDeF:myPassword"))))
+		w := httptest.NewRecorder()
+
+		config := Configuration{
+			ServiceAccountNameRegex:            "^service_account_([A-Za-z0-9]+)_([A-Za-z0-9]+)$",
+			ForwardUnauthenticatedRESTRequests: false,
+		}
+		doguRestHandler, err := NewDoguRestHandler(config, nextHandler)
+		require.NoError(t, err)
+
+		doguRestHandler.ServeHTTP(w, req)
+	})
+
+	t.Run("should not set context value in request if no basic-auth provided", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, ok := r.Context().Value(_ServiceAccountAuthContextKey).(bool)
+			assert.False(t, ok)
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+		w := httptest.NewRecorder()
+
+		config := Configuration{
+			ServiceAccountNameRegex:            "^service_account_([A-Za-z0-9]+)_([A-Za-z0-9]+)$",
+			ForwardUnauthenticatedRESTRequests: true,
+		}
+		doguRestHandler, err := NewDoguRestHandler(config, nextHandler)
+		require.NoError(t, err)
+
+		doguRestHandler.ServeHTTP(w, req)
+	})
+
+	t.Run("should fail to create handler with error in regex", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, ok := r.Context().Value(_ServiceAccountAuthContextKey).(bool)
+			assert.False(t, ok)
+		})
+
+		config := Configuration{
+			ServiceAccountNameRegex:            "[",
+			ForwardUnauthenticatedRESTRequests: true,
+		}
+		_, err := NewDoguRestHandler(config, nextHandler)
+
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error compiling serviceAccountNameRegex: error parsing regexp: missing closing ]")
+	})
+
+	t.Run("should not use doguRestHandler if no regex is configured", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, ok := r.Context().Value(_ServiceAccountAuthContextKey).(bool)
+			assert.False(t, ok)
+		})
+
+		logBuf := new(bytes.Buffer)
+		logging.SetBackend(logging.NewLogBackend(logBuf, "", 0))
+
+		config := Configuration{}
+		doguRestHandler, err := NewDoguRestHandler(config, nextHandler)
+		require.NoError(t, err)
+
+		assert.NotNil(t, doguRestHandler)
+		assert.Contains(t, logBuf.String(), "no ServiceAccountNameRegex configured. Not using doguRestHandler.")
 	})
 }
 
-func prepareServers(t *testing.T, nexusHandler http.HandlerFunc, casHandler http.HandlerFunc, carpCasHandler http.HandlerFunc) *url.URL {
-	t.Helper()
-
-	nexusMock := httptest.NewServer(nexusHandler)
-	t.Cleanup(func() { nexusMock.Close() })
-
-	nexusPortSplit := strings.Split(nexusMock.URL, ":")
-	nexusPort, _ := strconv.Atoi(nexusPortSplit[2])
-	fmt.Println("Nexus identifies as", nexusMock.URL)
-
-	casMock := httptest.NewServer(casHandler)
-	t.Cleanup(func() { casMock.Close() })
-	fmt.Println("CAS identifies as", casMock.URL)
-
-	// build a listener to avoid the chicken-and-egg problem between server start and parsing conf.Target
-	carpListener, err := net.Listen("tcp", "127.0.0.1:0")
-	// do not defer listener.Close() here. The closing will be done during server.Close()
-	require.NoError(t, err)
-	carpServerUrl := "http://" + carpListener.Addr().String()
-	fmt.Println("carp identifies as", carpServerUrl)
-
-	conf := Configuration{
-		BaseUrl:                            "http://127.0.0.1",
-		CasUrl:                             casMock.URL,
-		ServiceUrl:                         "https://ces.org/nexus",
-		Target:                             nexusMock.URL,
-		ResourcePath:                       "/nexus/repository",
-		SkipSSLVerification:                true,
-		Port:                               nexusPort,
-		PrincipalHeader:                    "X-CARP-Authentication",
-		LogoutMethod:                       "DELETE",
-		LogoutPath:                         "/rapture/session",
-		ForwardUnauthenticatedRESTRequests: true,
-		LoggingFormat:                      " %{level:.4s} [%{module}:%{shortfile}] %{message}",
-		LogLevel:                           "INFO",
+func TestIsServiceAccountAuthentication(t *testing.T) {
+	tests := []struct {
+		name         string
+		contextKey   string
+		contextValue interface{}
+		want         bool
+	}{
+		{
+			"should return true",
+			_ServiceAccountAuthContextKey,
+			true,
+			true,
+		},
+		{
+			"should return false",
+			_ServiceAccountAuthContextKey,
+			false,
+			false,
+		},
+		{
+			"should return false for wrong type",
+			_ServiceAccountAuthContextKey,
+			"this no bool",
+			false,
+		},
+		{
+			"should return false for missing key",
+			"FooKey",
+			true,
+			false,
+		},
 	}
-
-	sut, err := NewDoguRestHandler(conf, carpCasHandler)
-	require.NoError(t, err)
-
-	carpServer := httptest.NewUnstartedServer(sut)
-	t.Cleanup(func() { carpServer.Close() })
-
-	// replace the default listener with our own
-	_ = carpServer.Listener.Close()
-	carpServer.Listener = carpListener
-	carpServer.Start()
-
-	requestUrlRaw, err := url.JoinPath(carpServer.URL, someTargetFile)
-	require.NoError(t, err)
-	requestUrl, err := url.Parse(requestUrlRaw)
-	require.NoError(t, err)
-
-	return requestUrl
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), tt.contextKey, tt.contextValue)
+			req := httptest.NewRequest(http.MethodGet, "/foo", nil).WithContext(ctx)
+			assert.Equalf(t, tt.want, IsServiceAccountAuthentication(req), "IsServiceAccountAuthentication(%v)", req)
+		})
+	}
 }
