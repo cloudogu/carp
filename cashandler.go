@@ -42,7 +42,7 @@ type CasRequestHandler struct {
 }
 
 func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if ShouldByPassCasAuthentication(r) {
+	if IsServiceAccountAuthentication(r) {
 		// no cas-authentication needed -> skip cas-handler
 		h.wrappedHandler.ServeHTTP(w, r)
 		return

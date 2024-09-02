@@ -14,8 +14,7 @@ const (
 	limiterDefaultTokensDuringBurst = 150
 )
 
-const httpHeaderXForwardedFor = "X-Forwarded-For"
-const httpHeaderAuthorization = "Authorization"
+const _HttpHeaderXForwardedFor = "X-Forwarded-For"
 
 var (
 	mu      sync.RWMutex
@@ -24,10 +23,16 @@ var (
 
 func NewThrottlingHandler(configuration Configuration, handler http.Handler) (http.HandlerFunc, error) {
 	return func(writer http.ResponseWriter, request *http.Request) {
+		if !IsServiceAccountAuthentication(request) {
+			// no throttling needed -> skip
+			handler.ServeHTTP(writer, request)
+			return
+		}
+
 		username, _, _ := request.BasicAuth()
 
 		// go reverse proxy may add additional IP addresses from localhost. We need to take the right one.
-		forwardedIpAddrRaw := request.Header.Get(httpHeaderXForwardedFor)
+		forwardedIpAddrRaw := request.Header.Get(_HttpHeaderXForwardedFor)
 		forwardedIpAddresses := strings.Split(forwardedIpAddrRaw, ", ")
 		initialForwardedIpAddress := ""
 		if len(forwardedIpAddresses) > 0 {

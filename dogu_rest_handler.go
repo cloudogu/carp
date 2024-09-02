@@ -6,40 +6,31 @@ import (
 	"strings"
 )
 
-const BypassCasAuthContextKey = "BypassCasAuth"
+const _ServiceAccountAuthContextKey = "BypassCasAuth"
 
-func ShouldByPassCasAuthentication(r *http.Request) bool {
-	shouldByPass, ok := r.Context().Value(BypassCasAuthContextKey).(bool)
+func IsServiceAccountAuthentication(r *http.Request) bool {
+	isServiceAccountAuth, ok := r.Context().Value(_ServiceAccountAuthContextKey).(bool)
 	if !ok {
 		return false
 	}
-	return shouldByPass
+	return isServiceAccountAuth
 }
 
 func NewDoguRestHandler(configuration Configuration, handler http.Handler) (http.HandlerFunc, error) {
-	doguRestHandler := &restHandler{conf: configuration, wrappedHandler: handler}
+	return func(writer http.ResponseWriter, request *http.Request) {
+		log.Infof("doguRestHandler: receiving request: %s", request.URL.String())
 
-	return doguRestHandler.handleRestRequest, nil
-}
+		ctx := request.Context()
 
-type restHandler struct {
-	conf           Configuration
-	wrappedHandler http.Handler
-}
+		username, _, _ := request.BasicAuth()
 
-func (rh *restHandler) handleRestRequest(writer http.ResponseWriter, request *http.Request) {
-	log.Infof("doguRestHandler: receiving request: %s", request.URL.String())
+		// TODO service-account-matching
+		if !IsBrowserRequest(request) && configuration.ForwardUnauthenticatedRESTRequests && strings.HasPrefix("service_account_", username) {
+			// This is a Rest-Request with a service-account-user -> it should bypass cas-authentication
+			ctx = context.WithValue(ctx, _ServiceAccountAuthContextKey, true)
+		}
 
-	ctx := request.Context()
-
-	username, _, _ := request.BasicAuth()
-
-	// TODO service-account-matching
-	if !IsBrowserRequest(request) && rh.conf.ForwardUnauthenticatedRESTRequests && strings.HasPrefix("service_account_", username) {
-		// This is a Rest-Request with a service-account-user -> it should bypass cas-authentication
-		ctx = context.WithValue(request.Context(), BypassCasAuthContextKey, true)
-	}
-
-	// forward request to next handler with new context
-	rh.wrappedHandler.ServeHTTP(writer, request.WithContext(ctx))
+		// forward request to next handler with new context
+		handler.ServeHTTP(writer, request.WithContext(ctx))
+	}, nil
 }

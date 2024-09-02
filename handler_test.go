@@ -27,7 +27,7 @@ func TestCreateHandlersForConfig(t *testing.T) {
 
 			assert.Equal(t, http.MethodGet, r.Method)
 			assert.Equal(t, "Basic "+httpValueBasicAuthNexusLocalUser, r.Header.Get(httpHeaderAuthorization))
-			assert.Equal(t, someExternalClientIp+", 127.0.0.1", r.Header.Get(httpHeaderXForwardedFor))
+			assert.Equal(t, someExternalClientIp+", 127.0.0.1", r.Header.Get(_HttpHeaderXForwardedFor))
 			assert.Equal(t, expectedURI, r.RequestURI)
 			w.WriteHeader(http.StatusOK)
 		})
@@ -47,8 +47,8 @@ func TestCreateHandlersForConfig(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    requestUrl.JoinPath(strconv.Itoa(requestCallCount)),
 					Header: map[string][]string{
-						httpHeaderXForwardedFor: {someExternalClientIp},
-						httpHeaderAuthorization: {"Basic " + httpValueBasicAuthNexusLocalUser},
+						_HttpHeaderXForwardedFor: {someExternalClientIp},
+						httpHeaderAuthorization:  {"Basic " + httpValueBasicAuthNexusLocalUser},
 					},
 				}
 
@@ -73,7 +73,7 @@ func TestCreateHandlersForConfig(t *testing.T) {
 
 			assert.Equal(t, http.MethodGet, r.Method)
 			assert.Equal(t, "Basic "+httpValueBasicAuthBruteForceUser, r.Header.Get(httpHeaderAuthorization))
-			assert.Equal(t, someExternalClientIp+", 127.0.0.1", r.Header.Get(httpHeaderXForwardedFor))
+			assert.Equal(t, someExternalClientIp+", 127.0.0.1", r.Header.Get(_HttpHeaderXForwardedFor))
 			assert.Equal(t, expectedURI, r.RequestURI)
 			w.WriteHeader(http.StatusUnauthorized)
 		})
@@ -94,8 +94,8 @@ func TestCreateHandlersForConfig(t *testing.T) {
 				reqUrl := requestUrl.JoinPath(strconv.Itoa(requestCallCount)).String()
 				req, _ := http.NewRequest(http.MethodGet, reqUrl, nil)
 				req.Header = map[string][]string{
-					httpHeaderXForwardedFor: {someExternalClientIp},
-					httpHeaderAuthorization: {"Basic " + httpValueBasicAuthBruteForceUser},
+					_HttpHeaderXForwardedFor: {someExternalClientIp},
+					httpHeaderAuthorization:  {"Basic " + httpValueBasicAuthBruteForceUser},
 				}
 
 				httpCli := &http.Client{}
