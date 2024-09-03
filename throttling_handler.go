@@ -1,21 +1,26 @@
 package carp
 
 import (
+	"context"
 	"fmt"
 	"golang.org/x/time/rate"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
 const _HttpHeaderXForwardedFor = "X-Forwarded-For"
+const _DefaultCleanInterval = 300
 
 var (
 	mu      sync.RWMutex
 	clients = make(map[string]*rate.Limiter)
 )
 
-func NewThrottlingHandler(configuration Configuration, handler http.Handler) http.Handler {
+func NewThrottlingHandler(ctx context.Context, configuration Configuration, handler http.Handler) http.Handler {
+	go startCleanJob(ctx, configuration.LimiterCleanInterval)
+
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if !IsServiceAccountAuthentication(request) {
 			// no throttling needed -> skip
@@ -60,7 +65,7 @@ func NewThrottlingHandler(configuration Configuration, handler http.Handler) htt
 
 		handler.ServeHTTP(statusWriter, request)
 
-		if statusWriter.statusCode >= 200 && statusWriter.statusCode < 300 {
+		if statusWriter.statusCode >= 200 && statusWriter.statusCode < 400 {
 			cleanClient(ipUsernameId)
 		}
 
@@ -85,4 +90,34 @@ func cleanClient(ip string) {
 	defer mu.Unlock()
 
 	delete(clients, ip)
+}
+
+func cleanClients() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for client, limiter := range clients {
+		if limiter.Allow() {
+			delete(clients, client)
+		}
+	}
+}
+
+func startCleanJob(ctx context.Context, cleanInterval int) {
+	if cleanInterval == 0 {
+		cleanInterval = _DefaultCleanInterval
+	}
+
+	tick := time.Tick(time.Duration(cleanInterval) * time.Second)
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Infof("Context done - stop throttling cleanup job")
+			return
+		case <-tick:
+			log.Info("Start cleanup for clients in throttling map")
+			cleanClients()
+		}
+	}
 }

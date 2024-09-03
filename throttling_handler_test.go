@@ -13,6 +13,7 @@ import (
 
 func TestThrottlingHandler(t *testing.T) {
 	limiterConfig := Configuration{LimiterTokenRate: 1, LimiterBurstSize: 2}
+	ctx := context.TODO()
 
 	cleanUp := func(server *httptest.Server) {
 		server.Close()
@@ -24,7 +25,7 @@ func TestThrottlingHandler(t *testing.T) {
 			writer.WriteHeader(http.StatusUnauthorized)
 		}
 
-		throttlingHandler := NewThrottlingHandler(limiterConfig, handler)
+		throttlingHandler := NewThrottlingHandler(ctx, limiterConfig, handler)
 
 		var ctxHandler http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
 			request = request.WithContext(context.WithValue(request.Context(), _ServiceAccountAuthContextKey, true))
@@ -61,7 +62,7 @@ func TestThrottlingHandler(t *testing.T) {
 			writer.WriteHeader(http.StatusOK)
 		}
 
-		throttlingHandler := NewThrottlingHandler(limiterConfig, handler)
+		throttlingHandler := NewThrottlingHandler(ctx, limiterConfig, handler)
 
 		server := httptest.NewServer(throttlingHandler)
 		defer cleanUp(server)
@@ -85,7 +86,7 @@ func TestThrottlingHandler(t *testing.T) {
 			writer.WriteHeader(http.StatusUnauthorized)
 		}
 
-		throttlingHandler := NewThrottlingHandler(limiterConfig, handler)
+		throttlingHandler := NewThrottlingHandler(ctx, limiterConfig, handler)
 
 		var ctxHandler http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
 			request = request.WithContext(context.WithValue(request.Context(), _ServiceAccountAuthContextKey, true))
@@ -110,7 +111,7 @@ func TestThrottlingHandler(t *testing.T) {
 			writer.WriteHeader(http.StatusUnauthorized)
 		}
 
-		throttlingHandler := NewThrottlingHandler(limiterConfig, handler)
+		throttlingHandler := NewThrottlingHandler(ctx, limiterConfig, handler)
 
 		var ctxHandler http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
 			request = request.WithContext(context.WithValue(request.Context(), _ServiceAccountAuthContextKey, true))
@@ -158,7 +159,7 @@ func TestThrottlingHandler(t *testing.T) {
 			reqCounter++
 		}
 
-		throttlingHandler := NewThrottlingHandler(limiterConfig, handler)
+		throttlingHandler := NewThrottlingHandler(ctx, limiterConfig, handler)
 
 		var ctxHandler http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
 			request = request.WithContext(context.WithValue(request.Context(), _ServiceAccountAuthContextKey, true))
@@ -188,5 +189,58 @@ func TestThrottlingHandler(t *testing.T) {
 		}
 
 		assert.False(t, found)
+	})
+
+	t.Run("CleanUp clients", func(t *testing.T) {
+		var handler http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+			writer.WriteHeader(http.StatusUnauthorized)
+		}
+
+		lCtx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+		defer cancel()
+
+		limiterCleanInterval := 1
+
+		config := Configuration{
+			LimiterTokenRate:     limiterConfig.LimiterTokenRate,
+			LimiterBurstSize:     limiterConfig.LimiterBurstSize,
+			LimiterCleanInterval: limiterCleanInterval,
+		}
+
+		throttlingHandler := NewThrottlingHandler(lCtx, config, handler)
+
+		var ctxHandler http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+			request = request.WithContext(context.WithValue(request.Context(), _ServiceAccountAuthContextKey, true))
+			throttlingHandler.ServeHTTP(writer, request)
+		}
+
+		server := httptest.NewServer(ctxHandler)
+		defer cleanUp(server)
+
+		req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+		require.NoError(t, err)
+
+		req.Header.Set(_HttpHeaderXForwardedFor, "testIP")
+		req.SetBasicAuth("test", "test")
+
+		resp, lErr := server.Client().Do(req)
+		require.NoError(t, lErr)
+		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+
+		// Evaluate cleanup clients
+		require.True(t, len(clients) > 0)
+
+		tick := time.Tick(time.Duration(limiterCleanInterval) * time.Second)
+
+		for {
+			select {
+			case <-lCtx.Done():
+				assert.Fail(t, "Test failed because of timeout")
+			case <-tick:
+				if len(clients) == 0 {
+					return
+				}
+			}
+		}
 	})
 }

@@ -1,6 +1,7 @@
 package carp
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -27,6 +28,8 @@ func NewServer(configuration Configuration) (*http.Server, error) {
 }
 
 func createHandlersForConfig(configuration Configuration) (http.HandlerFunc, error) {
+	ctx := context.TODO()
+
 	mainHandler, err := createMainRequestHandler(configuration)
 	if err != nil {
 		return nil, err
@@ -37,7 +40,7 @@ func createHandlersForConfig(configuration Configuration) (http.HandlerFunc, err
 		return nil, err
 	}
 
-	throttlingHandler := NewThrottlingHandler(configuration, casRequestHandler)
+	throttlingHandler := NewThrottlingHandler(ctx, configuration, casRequestHandler)
 	if err != nil {
 		return nil, err
 	}
