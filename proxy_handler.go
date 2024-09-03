@@ -36,19 +36,19 @@ func NewProxyHandler(configuration Configuration) (*ProxyHandler, error) {
 }
 
 func (ph *ProxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if !cas.IsAuthenticated(req) {
-		log.Debugf("Found unauthenticated request %s...", req.URL.String())
-
-		if ph.config.ForwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
-			ph.handleRestRequest(w, req)
-			return
-		}
-
-		ph.handleUnauthenticatedBrowserRequest(w, req)
+	if cas.IsAuthenticated(req) {
+		ph.handleAuthenticatedBrowserRequest(w, req)
 		return
 	}
 
-	ph.handleAuthenticatedBrowserRequest(w, req)
+	log.Debugf("Found unauthenticated request %s...", req.URL.String())
+
+	if ph.config.ForwardUnauthenticatedRESTRequests && !IsBrowserRequest(req) {
+		ph.handleRestRequest(w, req)
+		return
+	}
+
+	ph.handleUnauthenticatedBrowserRequest(w, req)
 }
 
 func (ph *ProxyHandler) handleAuthenticatedBrowserRequest(w http.ResponseWriter, req *http.Request) {

@@ -2,6 +2,7 @@ package carp
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/op/go-logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,6 +51,7 @@ func TestProxyHandler_ServeHTTP(t *testing.T) {
 
 			w.WriteHeader(312)
 		}))
+		defer srv.Close()
 
 		ph, err := NewProxyHandler(Configuration{
 			ForwardUnauthenticatedRESTRequests: true,
@@ -89,6 +91,7 @@ func TestProxyHandler_ServeHTTP(t *testing.T) {
 
 			rCounter++
 		}))
+		defer srv.Close()
 
 		ph, err := NewProxyHandler(Configuration{
 			ForwardUnauthenticatedRESTRequests: true,
@@ -118,6 +121,7 @@ func TestProxyHandler_ServeHTTP(t *testing.T) {
 
 			w.WriteHeader(401)
 		}))
+		defer srv.Close()
 
 		ph, err := NewProxyHandler(Configuration{
 			ForwardUnauthenticatedRESTRequests: true,
@@ -144,6 +148,7 @@ func TestProxyHandler_ServeHTTP(t *testing.T) {
 
 			w.WriteHeader(401)
 		}))
+		defer srv.Close()
 
 		logBuf := new(bytes.Buffer)
 		logging.SetBackend(logging.NewLogBackend(logBuf, "", 0))
@@ -210,5 +215,38 @@ func TestProxyHandler_replicateUser(t *testing.T) {
 		err = ph.replicateUser(r, "myUser")
 
 		require.NoError(t, err)
+	})
+}
+
+func TestProxyHandler_handleAuthenticatedBrowserRequest(t *testing.T) {
+	t.Run("should handle authenticated browser-request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/foo/bar", r.URL.String())
+			assert.Equal(t, http.MethodGet, r.Method)
+			assert.Equal(t, "", r.Header.Get("MyUserHeader"))
+
+			w.WriteHeader(200)
+		}))
+		defer srv.Close()
+
+		logBuf := new(bytes.Buffer)
+		logging.SetBackend(logging.NewLogBackend(logBuf, "", 0))
+
+		ph, err := NewProxyHandler(Configuration{
+			PrincipalHeader:                    "MyUserHeader",
+			ForwardUnauthenticatedRESTRequests: false,
+			Target:                             srv.URL,
+		})
+		require.NoError(t, err)
+
+		ph.handleAuthenticatedBrowserRequest(w, r)
+
+		// 500 because there is no cas-client, but for this test it is ok
+		fmt.Printf("body: %s", w.Body.String())
+		assert.Equal(t, 200, w.Code)
+		assert.Contains(t, logBuf.String(), "Forwarding request")
 	})
 }
