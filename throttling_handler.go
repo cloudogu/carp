@@ -61,7 +61,7 @@ func NewThrottlingHandler(configuration Configuration, handler http.Handler) htt
 		handler.ServeHTTP(statusWriter, request)
 
 		if statusWriter.statusCode >= 200 && statusWriter.statusCode < 300 {
-			cleanClient(initialForwardedIpAddress)
+			cleanClient(ipUsernameId)
 		}
 
 	})
