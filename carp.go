@@ -1,6 +1,7 @@
 package carp
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -30,7 +31,7 @@ func createHandlersForConfig(configuration Configuration) (http.HandlerFunc, err
 		return nil, fmt.Errorf("error creating cas-request-handler: %w", err)
 	}
 
-	throttlingHandler := NewThrottlingHandler(configuration, casRequestHandler)
+	throttlingHandler := NewThrottlingHandler(context.TODO(), configuration, casRequestHandler)
 
 	doguRestHandler, err := NewDoguRestHandler(configuration, throttlingHandler)
 	if err != nil {
