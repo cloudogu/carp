@@ -32,7 +32,23 @@ you can configure the way your resource paths look like with the `resource-path`
 resource-path: /nexus/repository
 ```
 
-Start the server:
+### Bypassing CAS-Authentication
+Sometimes it is useful to bypass the cas-authentication, for instance requests with service-account-users. which only exist in the dogu, but not in CAS/LDAP.
+This prevents request-throttling in CAS for requests that only have dogu-internal authentication.
+Since CAS also has throttling for unsuccessful requests, a limiter can be used in the CARP as well. 
+
+The following config can be used for this:
+
+```yaml
+# a regex that matches the username of the basic-auth user from the request that should bypass cas-authentication
+service-account-name-regex: "^service_account_([A-Za-z0-9]+)_([A-Za-z0-9]+)$"
+# limits unsuccessful requests using the token-bucket-algorithm (see https://en.wikipedia.org/wiki/Token_bucket)
+limiter-token-rate: 10
+limiter-burst-size: 150
+```
+
+
+## Start the server:
 
 ```go
 package main
