@@ -14,6 +14,11 @@ import (
 func TestThrottlingHandler(t *testing.T) {
 	limiterConfig := Configuration{LimiterTokenRate: 1, LimiterBurstSize: 2}
 
+	cleanUp := func(server *httptest.Server) {
+		server.Close()
+		clients = make(map[string]*rate.Limiter)
+	}
+
 	t.Run("Throttle too many requests in short time", func(t *testing.T) {
 		var handler http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
 			writer.WriteHeader(http.StatusUnauthorized)
@@ -27,6 +32,7 @@ func TestThrottlingHandler(t *testing.T) {
 		}
 
 		server := httptest.NewServer(ctxHandler)
+		defer cleanUp(server)
 
 		req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 		require.NoError(t, err)
@@ -58,6 +64,7 @@ func TestThrottlingHandler(t *testing.T) {
 		throttlingHandler := NewThrottlingHandler(limiterConfig, handler)
 
 		server := httptest.NewServer(throttlingHandler)
+		defer cleanUp(server)
 
 		req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 		require.NoError(t, err)
@@ -86,6 +93,7 @@ func TestThrottlingHandler(t *testing.T) {
 		}
 
 		server := httptest.NewServer(ctxHandler)
+		defer cleanUp(server)
 
 		req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 		require.NoError(t, err)
@@ -110,6 +118,7 @@ func TestThrottlingHandler(t *testing.T) {
 		}
 
 		server := httptest.NewServer(ctxHandler)
+		defer cleanUp(server)
 
 		req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 		require.NoError(t, err)
@@ -157,6 +166,7 @@ func TestThrottlingHandler(t *testing.T) {
 		}
 
 		server := httptest.NewServer(ctxHandler)
+		defer cleanUp(server)
 
 		req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 		require.NoError(t, err)
