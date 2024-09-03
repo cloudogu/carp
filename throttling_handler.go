@@ -52,7 +52,7 @@ func NewThrottlingHandler(configuration Configuration, handler http.Handler) htt
 		if !limiter.Allow() {
 			log.Infof("Throttle request to %s from user %s with ip %s", request.RequestURI, username, initialForwardedIpAddress)
 
-			http.Error(writer, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+			http.Error(statusWriter, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
 		}
 

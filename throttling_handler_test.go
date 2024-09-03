@@ -1,7 +1,9 @@
 package carp
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,18 +15,28 @@ func TestThrottlingHandler(t *testing.T) {
 			writer.WriteHeader(http.StatusUnauthorized)
 		}
 
-		throttlingHandler := NewThrottlingHandler(Configuration{LimiterTokenRate: 1, LimiterBurstSize: 1}, handler)
-		server := httptest.NewServer(throttlingHandler)
+		throttlingHandler := NewThrottlingHandler(Configuration{LimiterTokenRate: 1, LimiterBurstSize: 2}, handler)
 
-		req, _ := http.NewRequest(http.MethodGet, server.URL, nil)
+		var ctxHandler http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+			request = request.WithContext(context.WithValue(request.Context(), _ServiceAccountAuthContextKey, true))
+			throttlingHandler.ServeHTTP(writer, request)
+		}
+
+		server := httptest.NewServer(ctxHandler)
+
+		req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+		require.NoError(t, err)
+
 		req.Header.Set(_HttpHeaderXForwardedFor, "testIP")
+		req.SetBasicAuth("test", "test")
 
 		var found bool
 
 		for i := 0; i < 5; i++ {
 			resp, lErr := server.Client().Do(req)
-			t.Log(i, resp.StatusCode)
 			assert.NoError(t, lErr)
+
+			t.Log(i, resp.StatusCode)
 			if resp.StatusCode == http.StatusTooManyRequests {
 				found = true
 				break
