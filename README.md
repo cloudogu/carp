@@ -89,7 +89,8 @@ The Dogu-Rest-Handler wraps the Throttling-Handler and calls it afterwards.
 
 ### 2. Throttling-Handler
 The Throttling-Handler checks if the incoming request is marked as "Service-Account-Authentication" and if so throttling is performed if needed.
-TODO describe throttling...
+The throttling is performed based on the remote IP address and the username by using the [token-bucket-algorithm](https://pkg.go.dev/golang.org/x/time/rate#Limiter) for unsuccessful 
+requests (HTTP status code 4xx). When too many unsuccessful requests are performed, the throttling handler will stop forwarding request by returning a http error (http status code 429).
 The Throttling-Handler wraps the CAS-Handler and calls it afterwards.
 
 ### 3. CAS-Handler
