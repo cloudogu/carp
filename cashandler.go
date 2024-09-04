@@ -4,17 +4,19 @@ import (
 	"net/http"
 )
 
-func NewCasRequestHandler(configuration Configuration, app http.Handler) (http.Handler, error) {
+// NewCasRequestHandler creates a CasRequestHandler that wraps the given http.Handler and adds CAS-Authentication to the request
+func NewCasRequestHandler(configuration Configuration, handler http.Handler) (http.Handler, error) {
 	casClientFactory, err := NewCasClientFactory(configuration)
 	if err != nil {
 		return nil, err
 	}
 
-	browserHandler := casClientFactory.CreateClient().Handle(app)
+	browserHandler := casClientFactory.CreateClient().Handle(handler)
 
 	return &CasRequestHandler{
+		wrappedHandler:    handler,
 		CasBrowserHandler: wrapWithLogoutRedirectionIfNeeded(configuration, browserHandler),
-		CasRestHandler:    casClientFactory.CreateRestClient().Handle(app),
+		CasRestHandler:    casClientFactory.CreateRestClient().Handle(handler),
 	}, nil
 }
 
@@ -34,11 +36,18 @@ func logoutRedirectionConfigured(configuration Configuration) bool {
 }
 
 type CasRequestHandler struct {
+	wrappedHandler    http.Handler
 	CasBrowserHandler http.Handler
 	CasRestHandler    http.Handler
 }
 
 func (h *CasRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if IsServiceAccountAuthentication(r) {
+		// no cas-authentication needed -> skip cas-handler
+		h.wrappedHandler.ServeHTTP(w, r)
+		return
+	}
+
 	handler := h.CasRestHandler
 	if IsBrowserRequest(r) {
 		handler = h.CasBrowserHandler
