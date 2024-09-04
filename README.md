@@ -71,3 +71,30 @@ func main() {
   server.ListenAndServe()
 }
 ```
+
+## Structure
+
+The CARP is structured by four HTTP-Handlers which are wrapped around each other.
+They are called in the following order:
+
+### 1. Dogu-Rest-Handler
+The Dogu-Rest-Handler is the first / outermost handler to call.
+It checks if the incoming request is a non-browser-request and if this request has basic-authentication with a username which matches a configured regular-expression.
+When the expression matches the request is marked as "Service-Account-Authentication", which then can used by other handlers to e.g. bypass cas-authentication.
+The Dogu-Rest-Handler wraps the Throttling-Handler and calls it afterwards.
+
+### 2. Throttling-Handler
+The Throttling-Handler checks if the incoming request is marked as "Service-Account-Authentication" and if so throttling is performed if needed.
+TODO describe throttling...
+The Throttling-Handler wraps the CAS-Handler and calls it afterwards.
+
+### 3. CAS-Handler
+The CAS-Handler checks if the incoming request is marked as "Service-Account-Authentication" and if bypasses the CAS-authentication by immediately calling the next handler.
+If the request ist __not__ marked as "Service-Account-Authentication" the CAS-authentication is performed and the resulting authentication-data is added to the request-context 
+The CAS-Handler wraps the Proxy-Handler and calls it afterwards.
+
+#### 4. Proxy-Handler
+The Proxy-Handler checks the authentication-data from the incoming-request.
+Authenticated requests are forwarded and if needed the `UserReplicator` is called.
+Unauthenticated browser-requests are redirected to CAS-Login-Page.
+Unauthenticated REST-Requests are also forwarded to configured target. 
