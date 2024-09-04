@@ -33,7 +33,7 @@ resource-path: /nexus/repository
 ```
 
 ### Bypassing CAS-Authentication
-Sometimes it is useful to bypass the cas-authentication, for instance requests with service-account-users. which only exist in the dogu, but not in CAS/LDAP.
+Sometimes it is useful to bypass the cas-authentication, for instance requests with service-account-users, which only exist in the dogu, but not in CAS/LDAP.
 This prevents request-throttling in CAS for requests that only have dogu-internal authentication.
 Since CAS also has throttling for unsuccessful requests, a limiter can be used in the CARP as well. 
 
@@ -42,9 +42,13 @@ The following config can be used for this:
 ```yaml
 # a regex that matches the username of the basic-auth user from the request that should bypass cas-authentication
 service-account-name-regex: "^service_account_([A-Za-z0-9]+)_([A-Za-z0-9]+)$"
-# limits unsuccessful requests using the token-bucket-algorithm (see https://en.wikipedia.org/wiki/Token_bucket)
+# limiter limits unsuccessful requests using the token-bucket-algorithm (see https://en.wikipedia.org/wiki/Token_bucket)
+# is the rate how many tokens will be refreshed, here: 10/s
 limiter-token-rate: 10
+# is the initial and maximum size of the bucket containing the tokens
 limiter-burst-size: 150
+# the interval in which staled or expired clients will be removed from the throttling list
+limiter-clean-interval: 300
 ```
 
 
