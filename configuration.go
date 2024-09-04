@@ -22,10 +22,14 @@ type Configuration struct {
 	LogoutMethod                       string `yaml:"logout-method"`
 	LogoutPath                         string `yaml:"logout-path"`
 	ForwardUnauthenticatedRESTRequests bool   `yaml:"forward-unauthenticated-rest-requests"`
+	ServiceAccountNameRegex            string `yaml:"service-account-name-regex"`
 	LoggingFormat                      string `yaml:"log-format"`
 	LogLevel                           string `yaml:"log-level"`
 	UserReplicator                     UserReplicator
 	ResponseModifier                   func(*http.Response) error
+	LimiterTokenRate                   int `yaml:"limiter-token-rate"`
+	LimiterBurstSize                   int `yaml:"limiter-burst-size"`
+	LimiterCleanInterval               int `yaml:"limiter-clean-interval"`
 }
 
 func InitializeAndReadConfiguration() (Configuration, error) {
