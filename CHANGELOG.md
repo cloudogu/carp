@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.3.0] - 2024-09-18
+### Changed
+- Relicense to AGPL-3.0-only
+
 ## [v1.2.0] - 2024-09-04
 - [#14] add ability to bypass CAS-authentication for certain non-browser-requests
   - This prevents request-throttling in CAS for requests that only have dogu-internal authentication  
