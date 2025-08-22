@@ -11,7 +11,7 @@ func NewCasRequestHandler(configuration Configuration, handler http.Handler) (ht
 		return nil, err
 	}
 
-	browserHandler := casClientFactory.CreateClient().Handle(handler)
+	browserHandler := casClientFactory.CreateClient().CreateHandler(handler)
 
 	return &CasRequestHandler{
 		wrappedHandler:    handler,
