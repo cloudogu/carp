@@ -1,15 +1,15 @@
 module github.com/cloudogu/carp
 
-go 1.23.0
+go 1.26.0
 
 require (
 	github.com/cloudogu/go-cas v2.2.2+incompatible
-	github.com/op/go-logging v0.0.0-20160211212156-b2cb9fa56473
-	github.com/pkg/errors v0.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
+	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.11.1
 	github.com/vulcand/oxy v1.1.1-0.20200728142051-1826c8c7524c
-	golang.org/x/time v0.5.0
-	gopkg.in/yaml.v2 v2.3.0
+	golang.org/x/time v0.14.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
